@@ -1,0 +1,19 @@
+use thiserror::Error;
+
+pub type MarketResult<T> = std::result::Result<T, MarketError>;
+
+/// The error enum for MarketData
+#[derive(Debug, Error)]
+pub enum MarketError {
+    #[error("Error parsing the Url: {0}")]
+    UrlParseError(#[from] url::ParseError),
+
+    #[error("Unable to retrieve data: {0}")]
+    RetriveDataError(#[from] reqwest::Error),
+
+    #[error("Unable to deserialize: {0}")]
+    UnableToDeserialize(#[from] serde_json::error::Error),
+
+    #[error("Http error: {0}")]
+    HttpError(String),
+}

@@ -12,11 +12,7 @@
 use serde::Deserialize;
 use url::Url;
 
-use crate::{
-    client::Client,
-    errors::MarketResult,
-    publishers::{DataRetrieval, MarketData},
-};
+use crate::{client::MarketData, errors::MarketResult, publishers::Publisher, rest_call::Client};
 
 const BASE_URL: &str = "https://api.iex.cloud/v1/stock/";
 
@@ -30,17 +26,19 @@ pub struct Iex {
 }
 
 impl Iex {
-    pub fn new(token: String, symbol: String, range: String) -> Self {
+    pub fn new() -> Self {
         Iex {
-            token: token,
-            symbol: symbol,
-            range: range,
             ..Default::default()
         }
     }
+    pub fn with_config(&mut self, token: String, symbol: String, range: String) -> () {
+        self.token = token;
+        self.symbol = symbol;
+        self.range = range;
+    }
 }
 
-impl DataRetrieval for Iex {
+impl Publisher for Iex {
     fn create_endpoint(&mut self) -> MarketResult<()> {
         let base_url = Url::parse(BASE_URL)?;
         let constructed_url = base_url.join(&format!(
@@ -51,14 +49,14 @@ impl DataRetrieval for Iex {
         Ok(())
     }
 
-    async fn get_data(&mut self) -> MarketResult<()> {
+    fn get_data(&mut self) -> MarketResult<()> {
         let client = Client::new(
             self.endpoint
                 .clone()
                 .expect("Use create_endpoint method first to construct the URL"),
         );
-        let response = client.get_data().await?;
-        let body = response.text().await?;
+        let response = client.get_data()?;
+        let body = response.text()?;
 
         let prices: HistoricalPrices = serde_json::from_str(&body)?;
 

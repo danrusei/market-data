@@ -1,32 +1,36 @@
-use reqwest::Response;
-use url::Url;
+use crate::publishers::{iexcloud::Iex, Publisher};
+use chrono::NaiveDate;
 
-use crate::{errors::MarketResult, MarketError};
-
-pub struct Client {
-    host: Url,
-    inner_client: reqwest::Client,
+pub struct MarketClient {
+    inner: Box<dyn Publisher>,
 }
 
-impl Client {
-    pub(crate) fn new(host: Url) -> Self {
-        Client {
-            host: host,
-            inner_client: reqwest::Client::new(),
-        }
-    }
-    pub(crate) async fn get_data(&self) -> MarketResult<Response> {
-        let client = &self.inner_client;
+pub enum Site {
+    Iex,
+}
 
-        // Make an asynchronous GET request
-        let response = client.get(self.host.clone()).send().await?;
-
-        // Check if the request was successful, else send to user as Error
-        let status_code = response.status();
-        if status_code.is_success() {
-            Ok(response)
-        } else {
-            Err(MarketError::HttpError(status_code.to_string()))
-        }
+impl MarketClient {
+    pub fn new(site: Site) -> Self {
+        let inner = match site {
+            Site::Iex => Box::new(Iex::new()),
+        };
+        MarketClient { inner }
     }
+    pub fn with_config(&self, token: String, symbol: String, range: String) -> () {
+        self.inner.with_config(token, symbol, range);
+    }
+}
+
+pub struct MarketData {
+    symbol: String,
+    data: Vec<Series>,
+}
+
+pub struct Series {
+    date: NaiveDate,
+    open: f32,
+    close: f32,
+    high: f32,
+    low: f32,
+    volume: f32,
 }

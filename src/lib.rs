@@ -1,8 +1,10 @@
 mod client;
-pub use client::{MarketClient, MarketData, Site};
+pub use client::{MarketClient, MarketData};
 
 mod publishers;
-mod rest_call;
+pub use publishers::iexcloud::Iex;
 
 pub mod errors;
 pub use errors::MarketError;
+
+mod rest_call;

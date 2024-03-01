@@ -1,23 +1,26 @@
-use crate::publishers::{iexcloud::Iex, Publisher};
+use crate::{errors::MarketResult, publishers::Publisher};
 use chrono::NaiveDate;
 
-pub struct MarketClient {
-    inner: Box<dyn Publisher>,
+pub struct MarketClient<T: Publisher> {
+    inner: T,
 }
 
-pub enum Site {
-    Iex,
-}
-
-impl MarketClient {
-    pub fn new(site: Site) -> Self {
-        let inner = match site {
-            Site::Iex => Box::new(Iex::new()),
-        };
-        MarketClient { inner }
+impl<T: Publisher> MarketClient<T> {
+    pub fn new(site: T) -> Self {
+        MarketClient { inner: site }
     }
-    pub fn with_config(&self, token: String, symbol: String, range: String) -> () {
-        self.inner.with_config(token, symbol, range);
+    pub fn create_endpoint(&mut self) -> MarketResult<()> {
+        self.inner.create_endpoint()?;
+        Ok(())
+    }
+    pub fn get_data(&mut self) -> MarketResult<()> {
+        self.inner.get_data()?;
+        Ok(())
+    }
+    pub fn transform_data(&self) -> MarketResult<()> {
+        let _data = self.inner.transform_data();
+        // Here TODO something wth transformed Data
+        Ok(())
     }
 }
 

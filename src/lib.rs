@@ -1,5 +1,5 @@
 mod client;
-pub use client::{MarketClient, MarketData};
+pub use client::{MarketClient, MarketData, Series};
 
 mod publishers;
 pub use publishers::iexcloud::Iex;

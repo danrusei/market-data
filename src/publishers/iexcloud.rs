@@ -12,7 +12,12 @@
 use serde::Deserialize;
 use url::Url;
 
-use crate::{client::MarketData, errors::MarketResult, publishers::Publisher, rest_call::Client};
+use crate::{
+    client::{MarketData, Series},
+    errors::MarketResult,
+    publishers::Publisher,
+    rest_call::Client,
+};
 
 const BASE_URL: &str = "https://api.iex.cloud/v1/stock/";
 
@@ -22,17 +27,17 @@ pub struct Iex {
     symbol: String,
     range: String,
     endpoint: Option<url::Url>,
-    data: Option<HistoricalPrices>,
+    data: Option<Vec<HistoricalPrice>>,
 }
 
 impl Iex {
-    pub fn new() -> Self {
+    pub fn new(token: String) -> Self {
         Iex {
+            token: token,
             ..Default::default()
         }
     }
-    pub fn with_config(&mut self, token: String, symbol: String, range: String) -> () {
-        self.token = token;
+    pub fn for_series(&mut self, symbol: String, range: String) -> () {
         self.symbol = symbol;
         self.range = range;
     }
@@ -58,22 +63,34 @@ impl Publisher for Iex {
         let response = client.get_data()?;
         let body = response.text()?;
 
-        let prices: HistoricalPrices = serde_json::from_str(&body)?;
-
-        //self.data = Some(prices);
-        println!("Response body deserialized: {:?}", prices);
+        let prices: Vec<HistoricalPrice> = serde_json::from_str(&body)?;
+        self.data = Some(prices);
 
         Ok(())
     }
 
-    fn transform_data(&self) -> MarketData {
-        todo!()
-    }
-}
+    fn transform_data(&self) -> Option<MarketData> {
+        if let Some(data) = self.data.as_ref() {
+            let data_series: Vec<Series> = data
+                .iter()
+                .map(|f| Series {
+                    date: f.date.clone(),
+                    open: f.open,
+                    close: f.close,
+                    high: f.high,
+                    low: f.low,
+                    volume: f.volume as f32,
+                })
+                .collect();
 
-#[derive(Debug, Deserialize)]
-struct HistoricalPrices {
-    prices: Vec<HistoricalPrice>,
+            Some(MarketData {
+                symbol: self.symbol.clone(),
+                data: data_series,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,39 +99,85 @@ struct HistoricalPrice {
     high: f32,
     low: f32,
     open: f32,
+    #[allow(dead_code)]
+    #[serde(rename(deserialize = "priceDate"))]
+    price_date: String,
+    #[allow(dead_code)]
     symbol: String,
     volume: u64,
+    #[allow(dead_code)]
     id: String,
+    #[allow(dead_code)]
     key: String,
+    #[allow(dead_code)]
     subkey: String,
     date: String,
+    #[allow(dead_code)]
     updated: u64,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "changeOverTime"))]
     change_over_time: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "marketChangeOverTime"))]
     market_change_over_time: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "uOpen"))]
     u_open: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "uClose"))]
     u_close: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "uHigh"))]
     u_high: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "uLow"))]
     u_low: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "uVolume"))]
     u_volume: u64,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "fOpen"))]
     f_open: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "fClose"))]
     f_close: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "fHigh"))]
     f_high: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "fLow"))]
     f_low: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "fVolume"))]
     f_volume: u64,
+    #[allow(dead_code)]
     label: String,
+    #[allow(dead_code)]
     change: f32,
+    #[allow(dead_code)]
     #[serde(rename(deserialize = "changePercent"))]
     change_percent: f32,
 }
+
+// HistoricalPrice struct fields:
+// close    number  Adjusted data for historical dates. Split adjusted only.
+// high     number	Adjusted data for historical dates. Split adjusted only.
+// low	    number	Adjusted data for historical dates. Split adjusted only.
+// open	    number	Adjusted data for historical dates. Split adjusted only.
+// symbol	string	Associated symbol or ticker
+// volume	number	Adjusted data for historical dates. Split adjusted only.
+// changeOverTime	number	Percent change of each interval relative to first value. Useful for comparing multiple stocks.
+// marketChangeOverTime	number	Percent change of each interval relative to first value. 15 minute delayed consolidated data.
+// uOpen	number	Unadjusted data for historical dates.
+// uClose	number	Unadjusted data for historical dates.
+// uHigh	number	Unadjusted data for historical dates.
+// uLow	    number	Unadjusted data for historical dates.
+// uVolume	number	Unadjusted data for historical dates.
+// fOpen	number	Fully adjusted for historical dates.
+// fClose	number	Fully adjusted for historical dates.
+// fHigh	number	Fully adjusted for historical dates.
+// fLow	    number	Fully adjusted for historical dates.
+// fVolume	number	Fully adjusted for historical dates.
+// label	number	A human readable format of the date depending on the range.
+// change	number	Change from previous trading day.
+// changePercent	number	Change percent from previous trading day.

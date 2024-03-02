@@ -1,5 +1,5 @@
 use crate::{errors::MarketResult, publishers::Publisher};
-use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
 
 pub struct MarketClient<T: Publisher> {
     inner: T,
@@ -24,16 +24,18 @@ impl<T: Publisher> MarketClient<T> {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct MarketData {
-    symbol: String,
-    data: Vec<Series>,
+    pub symbol: String,
+    pub data: Vec<Series>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Series {
-    date: NaiveDate,
-    open: f32,
-    close: f32,
-    high: f32,
-    low: f32,
-    volume: f32,
+    pub date: String,
+    pub open: f32,
+    pub close: f32,
+    pub high: f32,
+    pub low: f32,
+    pub volume: f32,
 }

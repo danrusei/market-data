@@ -8,10 +8,23 @@ lazy_static! {
 }
 
 fn main() -> Result<()> {
-    let mut site = Iex::new();
-    site.with_config(TOKEN.to_string(), "AAPL".to_string(), "2y".to_string());
+    let mut site = Iex::new(TOKEN.to_string());
+    site.for_series("AAPL".to_string(), "3m".to_string());
+
     let mut client = MarketClient::new(site);
     client.create_endpoint()?;
     client.get_data()?;
     Ok(())
 }
+
+//acceptable ranges
+// max	All available data up to 15 years	Historically adjusted market-wide data
+// 5y	Five years	Historically adjusted market-wide data
+// 2y	Two years	Historically adjusted market-wide data
+// 1y	One year	Historically adjusted market-wide data
+// ytd	Year-to-date	Historically adjusted market-wide data
+// 6m	Six months	Historically adjusted market-wide data
+// 3m	Three months	Historically adjusted market-wide data
+// 1m	One month (default)	Historically adjusted market-wide data
+// 1mm	One month	Historically adjusted market-wide data in 30 minute intervals
+// 5d	Five Days	Historically adjusted market-wide data by day.

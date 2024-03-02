@@ -1,5 +1,6 @@
 use crate::{errors::MarketResult, publishers::Publisher};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 pub struct MarketClient<T: Publisher> {
     inner: T,
@@ -17,10 +18,9 @@ impl<T: Publisher> MarketClient<T> {
         self.inner.get_data()?;
         Ok(())
     }
-    pub fn transform_data(&self) -> MarketResult<()> {
-        let _data = self.inner.transform_data();
-        // Here TODO something wth transformed Data
-        Ok(())
+    pub fn transform_data(&self) -> Option<MarketData> {
+        let data = self.inner.transform_data();
+        data
     }
 }
 
@@ -38,4 +38,29 @@ pub struct Series {
     pub high: f32,
     pub low: f32,
     pub volume: f32,
+}
+
+impl fmt::Display for MarketData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "MarketData: Symbol={}, Data=\n{}",
+            self.symbol,
+            self.data
+                .iter()
+                .map(|series| format!("  {}", series))
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
+}
+
+impl fmt::Display for Series {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Series: Date: {}, Open: {}, Close: {}, High: {}, Low: {}, Volume: {}",
+            self.date, self.open, self.close, self.high, self.low, self.volume
+        )
+    }
 }

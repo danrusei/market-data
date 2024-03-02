@@ -14,10 +14,21 @@ fn main() -> Result<()> {
     let mut client = MarketClient::new(site);
     client.create_endpoint()?;
     client.get_data()?;
+    let data = client.transform_data();
+    if let Some(data) = data {
+        println!("{}", data);
+    }
     Ok(())
 }
 
-//acceptable ranges
+// It prints:
+//
+// Series: Date: 2023-12-04, Open: 189.98, Close: 189.43, High: 190.05, Low: 187.4511, Volume: 43389520
+// Series: Date: 2023-12-05, Open: 190.21, Close: 193.42, High: 194.4, Low: 190.18, Volume: 66628400
+// Series: Date: 2023-12-05, Open: 190.21, Close: 193.42, High: 194.4, Low: 190.18, Volume: 66628400
+//.........
+
+//Acceptable ranges
 // max	All available data up to 15 years	Historically adjusted market-wide data
 // 5y	Five years	Historically adjusted market-wide data
 // 2y	Two years	Historically adjusted market-wide data

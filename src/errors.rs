@@ -16,4 +16,10 @@ pub enum MarketError {
 
     #[error("Http error: {0}")]
     HttpError(String),
+
+    #[error("Problem with downloaded data: {0}")]
+    DownloadedData(String),
+
+    #[error("Parsing error: {0}")]
+    ParsingError(String),
 }

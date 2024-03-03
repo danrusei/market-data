@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     client.create_endpoint()?;
     client.get_data()?;
     let data = client.transform_data();
-    if let Some(data) = data {
+    if let Ok(data) = data {
         println!("{}", data);
     }
     Ok(())

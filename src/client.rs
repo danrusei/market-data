@@ -1,4 +1,4 @@
-use crate::{errors::MarketResult, publishers::Publisher};
+use crate::{errors::MarketResult, publishers::Publisher, MarketError};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -18,9 +18,12 @@ impl<T: Publisher> MarketClient<T> {
         self.inner.get_data()?;
         Ok(())
     }
-    pub fn transform_data(&self) -> Option<MarketData> {
-        let data = self.inner.transform_data();
-        data
+    pub fn transform_data(&self) -> MarketResult<MarketData> {
+        let data = self.inner.transform_data().map_err(|err| {
+            MarketError::DownloadedData(format!("Unable to transform the data: {}", err))
+        })?;
+
+        Ok(data)
     }
 }
 

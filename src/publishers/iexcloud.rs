@@ -13,7 +13,7 @@ use url::Url;
 
 use crate::{
     client::{MarketData, Series},
-    errors::MarketResult,
+    errors::{MarketError, MarketResult},
     publishers::Publisher,
     rest_call::Client,
 };
@@ -68,7 +68,7 @@ impl Publisher for Iex {
         Ok(())
     }
 
-    fn transform_data(&self) -> Option<MarketData> {
+    fn transform_data(&self) -> MarketResult<MarketData> {
         if let Some(data) = self.data.as_ref() {
             let data_series: Vec<Series> = data
                 .iter()
@@ -82,12 +82,14 @@ impl Publisher for Iex {
                 })
                 .collect();
 
-            Some(MarketData {
+            Ok(MarketData {
                 symbol: self.symbol.clone(),
                 data: data_series,
             })
         } else {
-            None
+            Err(MarketError::DownloadedData(
+                "No data downloaded".to_string(),
+            ))
         }
     }
 }

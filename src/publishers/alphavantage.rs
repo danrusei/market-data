@@ -23,9 +23,10 @@ use crate::{
     errors::MarketResult,
     publishers::Publisher,
     rest_call::Client,
+    MarketError,
 };
 
-const BASE_URL: &str = "https://www.alphavantage.co/query?";
+const BASE_URL: &str = "https://www.alphavantage.co/";
 
 #[derive(Debug, Default)]
 pub struct AlphaVantage {
@@ -41,15 +42,19 @@ pub struct AlphaVantage {
 pub enum Function {
     // https://www.alphavantage.co/documentation/#daily
     #[default]
-    TIME_SERIES_DAILY,
+    TimeSeriesDaily,
     //https://www.alphavantage.co/documentation/#dailyadj
-    TIME_SERIES_DAILY_ADJUSTED,
+    #[allow(dead_code)]
+    TimeSeriesDailyAdjusted,
     // https://www.alphavantage.co/documentation/#intraday
-    TIME_SERIES_INTRADAY,
+    #[allow(dead_code)]
+    TimeSeriesIntraday,
     //https://www.alphavantage.co/documentation/#weekly
-    TIME_SERIES_WEEKLY,
+    #[allow(dead_code)]
+    TimeSeriesWeekly,
     //https://www.alphavantage.co/documentation/#weeklyadj
-    TIME_SERIES_WEEKLY_ADJUSTED,
+    #[allow(dead_code)]
+    TimeSeriesWeeklyAdjusted,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -71,13 +76,13 @@ impl AlphaVantage {
     }
     pub fn for_daily_series(&mut self, symbol: String, output_size: OutputSize) -> () {
         self.symbol = symbol;
-        self.function = Function::TIME_SERIES_DAILY;
+        self.function = Function::TimeSeriesDaily;
         self.output_size = output_size;
     }
-    pub fn for_intraday_series(&mut self, symbol: String) -> () {
+    pub fn for_intraday_series(&mut self, _symbol: String) -> () {
         todo!("not supported yet")
     }
-    pub fn for_weekly_series(&mut self, symbol: String) -> () {
+    pub fn for_weekly_series(&mut self, _symbol: String) -> () {
         todo!("not supported yet")
     }
 }
@@ -86,13 +91,13 @@ impl Publisher for AlphaVantage {
     fn create_endpoint(&mut self) -> MarketResult<()> {
         let base_url = Url::parse(BASE_URL)?;
         let constructed_url = base_url.join(&format!(
-            "function={}&symbol={}&outputsize={}&apikey={}",
+            "query?function={}&symbol={}&outputsize={}&datatype=json&apikey={}",
             self.function.to_string(),
             self.symbol,
             self.output_size.to_string(),
             self.token
         ))?;
-        self.endpoint = Some(constructed_url);
+        self.endpoint = dbg!(Some(constructed_url));
         Ok(())
     }
 
@@ -103,7 +108,7 @@ impl Publisher for AlphaVantage {
                 .expect("Use create_endpoint method first to construct the URL"),
         );
         let response = client.get_data()?;
-        let body = response.text()?;
+        let body = dbg!(response.text()?);
 
         let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
         self.data = Some(prices);
@@ -111,27 +116,43 @@ impl Publisher for AlphaVantage {
         Ok(())
     }
 
-    fn transform_data(&self) -> Option<MarketData> {
+    fn transform_data(&self) -> MarketResult<MarketData> {
         if let Some(data) = self.data.as_ref() {
-            let data_series: Vec<Series> = data
-                .time_series
-                .into_iter()
-                .map(|(date, series)| Series {
-                    date: date,
-                    open: series.open,
-                    close: series.close,
-                    high: series.high,
-                    low: series.low,
-                    volume: series.volume,
-                })
-                .collect();
+            let mut data_series: Vec<Series> = Vec::new();
+            for (date, series) in data.time_series.iter() {
+                let open: f32 = series.open.trim().parse().map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse Open field: {}", e))
+                })?;
+                let close: f32 = series.close.trim().parse().map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse Close field: {}", e))
+                })?;
+                let high: f32 = series.high.trim().parse().map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse High field: {}", e))
+                })?;
+                let low: f32 = series.low.trim().parse().map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse Low field: {}", e))
+                })?;
+                let volume: f32 = series.volume.trim().parse().map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+                })?;
 
-            Some(MarketData {
+                data_series.push(Series {
+                    date: date.to_owned(),
+                    open: open,
+                    close: close,
+                    high: high,
+                    low: low,
+                    volume: volume,
+                })
+            }
+            Ok(MarketData {
                 symbol: self.symbol.clone(),
                 data: data_series,
             })
         } else {
-            None
+            Err(MarketError::DownloadedData(
+                "No data downloaded".to_string(),
+            ))
         }
     }
 }
@@ -175,11 +196,11 @@ pub struct TimeSeriesData {
 impl ToString for Function {
     fn to_string(&self) -> String {
         match self {
-            Function::TIME_SERIES_DAILY => String::from("TIME_SERIES_DAILY"),
-            Function::TIME_SERIES_DAILY_ADJUSTED => String::from("TIME_SERIES_DAILY_ADJUSTED"),
-            Function::TIME_SERIES_INTRADAY => String::from("TIME_SERIES_INTRADAY"),
-            Function::TIME_SERIES_WEEKLY => String::from("TIME_SERIES_WEEKLY"),
-            Function::TIME_SERIES_WEEKLY_ADJUSTED => String::from("TIME_SERIES_WEEKLY_ADJUSTED"),
+            Function::TimeSeriesDaily => String::from("TIME_SERIES_DAILY"),
+            Function::TimeSeriesDailyAdjusted => String::from("TIME_SERIES_DAILY_ADJUSTED"),
+            Function::TimeSeriesIntraday => String::from("TIME_SERIES_INTRADAY"),
+            Function::TimeSeriesWeekly => String::from("TIME_SERIES_WEEKLY"),
+            Function::TimeSeriesWeeklyAdjusted => String::from("TIME_SERIES_WEEKLY_ADJUSTED"),
         }
     }
 }

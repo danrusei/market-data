@@ -1,13 +1,12 @@
-//Retrieve market data from:
+// Retrieve time series stock data from:
+// https://iexcloud.io/docs/
 //
-//https://iexcloud.io/docs/
-//
-//Example - retrieves historical data for Apple's daily stock price:
+// Example - retrieves historical data for Apple's daily stock price:
+// Reference https://iexcloud.io/docs/api/#historical-prices
 // https://api.iex.cloud/v1/stock/AAPL/chart/2y?token=YOUR-TOKEN-HERE
-//  --> reference https://iexcloud.io/docs/api/#historical-prices
 //
+// Reference https://iexcloud.io/docs/core/HISTORICAL_PRICES
 // https://api.iex.cloud/v1/data/core/historical_prices/aapl?range=2y&token=YOUR-TOKEN-HERE
-// --> reference https://iexcloud.io/docs/core/HISTORICAL_PRICES
 
 use serde::Deserialize;
 use url::Url;
@@ -27,7 +26,7 @@ pub struct Iex {
     symbol: String,
     range: String,
     endpoint: Option<url::Url>,
-    data: Option<Vec<HistoricalPrice>>,
+    data: Option<Vec<IexDailyPrices>>,
 }
 
 impl Iex {
@@ -63,7 +62,7 @@ impl Publisher for Iex {
         let response = client.get_data()?;
         let body = response.text()?;
 
-        let prices: Vec<HistoricalPrice> = serde_json::from_str(&body)?;
+        let prices: Vec<IexDailyPrices> = serde_json::from_str(&body)?;
         self.data = Some(prices);
 
         Ok(())
@@ -94,7 +93,7 @@ impl Publisher for Iex {
 }
 
 #[derive(Debug, Deserialize)]
-struct HistoricalPrice {
+struct IexDailyPrices {
     close: f32,
     high: f32,
     low: f32,

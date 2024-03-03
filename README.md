@@ -1,5 +1,5 @@
 # market-data
-A Rust Library to retrieve historical time-series market data. 
+A Rust Library to retrieve historical time-series stock data. 
 
 ## Usage
 

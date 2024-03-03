@@ -19,5 +19,9 @@ anyhow = "1.0.80"
 lazy_static = "1.4.0"
 
 [[example]]
-name = "data_from_iexcloud"
-path = "examples/data_from_iexcloud.rs"
+name = "series_from_iexcloud"
+path = "examples/series_from_iexcloud.rs"
+
+[[example]]
+name = "series_from_alphavantage"
+path = "examples/series_from_alphavantage.rs"

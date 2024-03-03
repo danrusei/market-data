@@ -1,3 +1,4 @@
+pub(crate) mod alphavantage;
 pub(crate) mod iexcloud;
 
 use crate::{client::MarketData, errors::MarketResult};

@@ -4,6 +4,7 @@ use crate::{
     publishers::Publisher,
     MarketError,
 };
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -44,7 +45,7 @@ pub struct MarketSeries {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Series {
-    pub date: String,
+    pub date: NaiveDate,
     pub open: f32,
     pub close: f32,
     pub high: f32,
@@ -53,12 +54,12 @@ pub struct Series {
 }
 
 impl MarketSeries {
-    pub fn enhance_data(self) -> EnhancedMarketSeries {
+    pub fn enhance_data(&self) -> EnhancedMarketSeries {
         let enhanced_series: Vec<EnhancedSeries> = self
             .data
             .iter()
             .map(|item| EnhancedSeries {
-                date: item.date.clone(),
+                date: item.date,
                 open: item.open,
                 close: item.close,
                 high: item.high,
@@ -68,7 +69,7 @@ impl MarketSeries {
             })
             .collect();
         EnhancedMarketSeries {
-            symbol: self.symbol,
+            symbol: self.symbol.clone(),
             data: enhanced_series,
         }
     }

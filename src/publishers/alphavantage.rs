@@ -14,6 +14,7 @@
 // Query the most recent full 30 days of intraday data by setting outputsize=full
 // https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&outputsize=full&apikey=demo
 
+use chrono::NaiveDate;
 use serde::Deserialize;
 use std::collections::HashMap;
 use url::Url;
@@ -135,9 +136,13 @@ impl Publisher for AlphaVantage {
                 let volume: f32 = series.volume.trim().parse().map_err(|e| {
                     MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
                 })?;
+                let date: NaiveDate =
+                    NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|e| {
+                        MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+                    })?;
 
                 data_series.push(Series {
-                    date: date.to_owned(),
+                    date: date,
                     open: open,
                     close: close,
                     high: high,
@@ -145,6 +150,10 @@ impl Publisher for AlphaVantage {
                     volume: volume,
                 })
             }
+
+            // sort the series by date
+            data_series.sort_by_key(|item| item.date);
+
             Ok(MarketSeries {
                 symbol: self.symbol.clone(),
                 data: data_series,

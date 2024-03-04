@@ -1,4 +1,5 @@
 use crate::indicators::moving_averages::simple_moving_average;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 pub(crate) mod moving_averages;
@@ -11,7 +12,7 @@ pub struct EnhancedMarketSeries {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EnhancedSeries {
-    pub date: String,
+    pub date: NaiveDate,
     pub open: f32,
     pub close: f32,
     pub high: f32,

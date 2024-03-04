@@ -8,6 +8,7 @@
 // Reference https://iexcloud.io/docs/core/HISTORICAL_PRICES
 // https://api.iex.cloud/v1/data/core/historical_prices/aapl?range=2y&token=YOUR-TOKEN-HERE
 
+use chrono::NaiveDate;
 use serde::Deserialize;
 use url::Url;
 
@@ -70,17 +71,24 @@ impl Publisher for Iex {
 
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
-            let data_series: Vec<Series> = data
-                .iter()
-                .map(|f| Series {
-                    date: f.date.clone(),
-                    open: f.open,
-                    close: f.close,
-                    high: f.high,
-                    low: f.low,
-                    volume: f.volume as f32,
+            let mut data_series: Vec<Series> = Vec::new();
+            for series in data.iter() {
+                let date: NaiveDate =
+                    NaiveDate::parse_from_str(&series.date, "%Y-%m-%d").map_err(|e| {
+                        MarketError::ParsingError(format!("Unable to parse Date field: {}", e))
+                    })?;
+                data_series.push(Series {
+                    date: date,
+                    open: series.open,
+                    close: series.close,
+                    high: series.high,
+                    low: series.low,
+                    volume: series.volume as f32,
                 })
-                .collect();
+            }
+
+            // sort the series by date
+            data_series.sort_by_key(|item| item.date);
 
             Ok(MarketSeries {
                 symbol: self.symbol.clone(),

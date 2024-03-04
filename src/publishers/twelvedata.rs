@@ -15,6 +15,7 @@
 // https://api.twelvedata.com/time_series?symbol=AAPL&interval=15min&apikey=your_api_key
 // https://api.twelvedata.com/time_series?symbol=AAPL&interval=1h&apikey=your_api_key
 
+use chrono::NaiveDate;
 use serde::Deserialize;
 use url::Url;
 
@@ -109,9 +110,13 @@ impl Publisher for Twelvedata {
                 let volume: f32 = series.volume.trim().parse().map_err(|e| {
                     MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
                 })?;
+                let date: NaiveDate = NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d")
+                    .map_err(|e| {
+                        MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+                    })?;
 
                 data_series.push(Series {
-                    date: series.datetime.clone(),
+                    date: date,
                     open: open,
                     close: close,
                     high: high,
@@ -119,6 +124,10 @@ impl Publisher for Twelvedata {
                     volume: volume,
                 })
             }
+
+            // sort the series by date
+            data_series.sort_by_key(|item| item.date);
+
             Ok(MarketSeries {
                 symbol: self.symbol.clone(),
                 data: data_series,

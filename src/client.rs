@@ -70,6 +70,7 @@ impl MarketSeries {
             .collect();
         EnhancedMarketSeries {
             symbol: self.symbol.clone(),
+            indicators: Vec::new(),
             data: enhanced_series,
         }
     }

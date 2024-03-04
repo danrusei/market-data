@@ -1,13 +1,21 @@
-use crate::indicators::moving_averages::simple_moving_average;
+use crate::indicators::{rsi::calculate_rsi, sma::calculate_sma};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-pub(crate) mod moving_averages;
+pub(crate) mod rsi;
+pub(crate) mod sma;
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EnhancedMarketSeries {
     pub symbol: String,
+    pub indicators: Vec<Option<Indicator>>,
     pub data: Vec<EnhancedSeries>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Indicator {
+    SMA(usize),
+    RSI(usize),
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -22,17 +30,30 @@ pub struct EnhancedSeries {
     pub sma: Option<f32>,
     //Exponential Moving Average
     pub ema: Option<f32>,
+    pub rsi: f32,
 }
 
 impl EnhancedMarketSeries {
-    fn sma(&mut self, window: usize) -> () {
-        let averages = simple_moving_average(&self.data, window);
+    pub fn with_sma(&mut self, period: usize) -> () {
+        self.indicators.push(Some(Indicator::SMA(period)));
+    }
+    pub fn with_rsi(&mut self, period: usize) -> () {
+        self.indicators.push(Some(Indicator::RSI(period)));
+    }
+    //TODO consolidate within a single function
+    //and iterate only one single time over struct to add calculated data
+    fn sma(&mut self, period: usize) -> () {
+        let averages = calculate_sma(&self.data, period);
         assert!(averages.len() == self.data.len());
         averages
             .iter()
             .enumerate()
-            .for_each(|(index, &item)| self.data[index + window].sma = Some(item));
+            .for_each(|(index, &item)| self.data[index + period].sma = Some(item));
 
         // TODO validate the logic !!!!
+    }
+    fn rsi(&mut self, period: usize) -> () {
+        let result_rsi = calculate_rsi(&self.data, period);
+        assert!(result_rsi.len() == self.data.len());
     }
 }

@@ -8,6 +8,9 @@ pub use publishers::{
     twelvedata::Twelvedata,
 };
 
+mod indicators;
+pub use indicators::{EnhancedMarketSeries, EnhancedSeries};
+
 pub mod errors;
 pub use errors::MarketError;
 

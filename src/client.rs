@@ -1,4 +1,9 @@
-use crate::{errors::MarketResult, publishers::Publisher, MarketError};
+use crate::{
+    errors::MarketResult,
+    indicators::{EnhancedMarketSeries, EnhancedSeries},
+    publishers::Publisher,
+    MarketError,
+};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -45,6 +50,28 @@ pub struct Series {
     pub high: f32,
     pub low: f32,
     pub volume: f32,
+}
+
+impl MarketSeries {
+    pub fn enhance_data(self) -> EnhancedMarketSeries {
+        let enhanced_series: Vec<EnhancedSeries> = self
+            .data
+            .iter()
+            .map(|item| EnhancedSeries {
+                date: item.date.clone(),
+                open: item.open,
+                close: item.close,
+                high: item.high,
+                low: item.low,
+                volume: item.volume,
+                ..Default::default()
+            })
+            .collect();
+        EnhancedMarketSeries {
+            symbol: self.symbol,
+            data: enhanced_series,
+        }
+    }
 }
 
 impl fmt::Display for MarketSeries {

@@ -19,7 +19,7 @@ use std::collections::HashMap;
 use url::Url;
 
 use crate::{
-    client::{MarketData, Series},
+    client::{MarketSeries, Series},
     errors::MarketResult,
     publishers::Publisher,
     rest_call::Client,
@@ -116,7 +116,7 @@ impl Publisher for AlphaVantage {
         Ok(())
     }
 
-    fn transform_data(&self) -> MarketResult<MarketData> {
+    fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
             let mut data_series: Vec<Series> = Vec::new();
             for (date, series) in data.time_series.iter() {
@@ -145,7 +145,7 @@ impl Publisher for AlphaVantage {
                     volume: volume,
                 })
             }
-            Ok(MarketData {
+            Ok(MarketSeries {
                 symbol: self.symbol.clone(),
                 data: data_series,
             })

@@ -12,7 +12,7 @@ use serde::Deserialize;
 use url::Url;
 
 use crate::{
-    client::{MarketData, Series},
+    client::{MarketSeries, Series},
     errors::{MarketError, MarketResult},
     publishers::Publisher,
     rest_call::Client,
@@ -68,7 +68,7 @@ impl Publisher for Iex {
         Ok(())
     }
 
-    fn transform_data(&self) -> MarketResult<MarketData> {
+    fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
             let data_series: Vec<Series> = data
                 .iter()
@@ -82,7 +82,7 @@ impl Publisher for Iex {
                 })
                 .collect();
 
-            Ok(MarketData {
+            Ok(MarketSeries {
                 symbol: self.symbol.clone(),
                 data: data_series,
             })

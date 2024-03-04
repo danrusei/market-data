@@ -18,7 +18,7 @@ impl<T: Publisher> MarketClient<T> {
         self.inner.get_data()?;
         Ok(())
     }
-    pub fn transform_data(&self) -> MarketResult<MarketData> {
+    pub fn transform_data(&self) -> MarketResult<MarketSeries> {
         let data = self.inner.transform_data().map_err(|err| {
             MarketError::DownloadedData(format!("Unable to transform the data: {}", err))
         })?;
@@ -28,7 +28,7 @@ impl<T: Publisher> MarketClient<T> {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MarketData {
+pub struct MarketSeries {
     pub symbol: String,
     pub data: Vec<Series>,
 }
@@ -43,7 +43,7 @@ pub struct Series {
     pub volume: f32,
 }
 
-impl fmt::Display for MarketData {
+impl fmt::Display for MarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

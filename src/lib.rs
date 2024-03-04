@@ -1,5 +1,5 @@
 mod client;
-pub use client::{MarketClient, MarketData, Series};
+pub use client::{MarketClient, MarketSeries, Series};
 
 mod publishers;
 pub use publishers::{

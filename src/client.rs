@@ -2,6 +2,7 @@ use crate::{errors::MarketResult, publishers::Publisher, MarketError};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// MarketClient holds the Publisher
 pub struct MarketClient<T: Publisher> {
     inner: T,
 }
@@ -10,14 +11,17 @@ impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
         MarketClient { inner: site }
     }
-    pub fn create_endpoint(&mut self) -> MarketResult<()> {
+    /// Creates the final query URL for the selected Provider
+    pub fn create_endpoint(mut self) -> MarketResult<Self> {
         self.inner.create_endpoint()?;
-        Ok(())
+        Ok(self)
     }
-    pub fn get_data(&mut self) -> MarketResult<()> {
+    /// Download the data series in the Provider format
+    pub fn get_data(mut self) -> MarketResult<Self> {
         self.inner.get_data()?;
-        Ok(())
+        Ok(self)
     }
+    /// Transform the downloaded Provider series into MarketSeries format
     pub fn transform_data(&self) -> MarketResult<MarketSeries> {
         let data = self.inner.transform_data().map_err(|err| {
             MarketError::DownloadedData(format!("Unable to transform the data: {}", err))

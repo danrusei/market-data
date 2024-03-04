@@ -14,12 +14,11 @@ fn main() -> Result<()> {
     // OutputSize::Full - returns the full-length time series of 20+ years of historical data
     site.for_daily_series("AAPL".to_string(), OutputSize::Compact);
 
-    let mut client = MarketClient::new(site);
-    client.create_endpoint()?;
-    client.get_data()?;
-    let data = client.transform_data();
-    if let Ok(data) = data {
-        println!("{}", data);
-    }
+    let client = MarketClient::new(site);
+    // Creates the query URL, download raw data and transform into MarketSeries struct
+    let data = client.create_endpoint()?.get_data()?.transform_data()?;
+
+    println!("{}", data);
+
     Ok(())
 }

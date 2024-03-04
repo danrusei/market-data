@@ -45,7 +45,7 @@ So far the following are supported.
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)
 * [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to)
 
-Alternative options, to be implemented:
+Alternative series providers, to be implemented:
 
 * [] [Polygon](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
 * [] [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage)

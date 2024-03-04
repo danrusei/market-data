@@ -11,13 +11,12 @@ fn main() -> Result<()> {
     let mut site = Iex::new(TOKEN.to_string());
     site.for_series("AAPL".to_string(), "3m".to_string());
 
-    let mut client = MarketClient::new(site);
-    client.create_endpoint()?;
-    client.get_data()?;
-    let data = client.transform_data();
-    if let Ok(data) = data {
-        println!("{}", data);
-    }
+    let client = MarketClient::new(site);
+    // Creates the query URL, download raw data and transform into MarketSeries struct
+    let data = client.create_endpoint()?.get_data()?.transform_data()?;
+
+    println!("{}", data);
+
     Ok(())
 }
 

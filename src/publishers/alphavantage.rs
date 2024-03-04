@@ -97,7 +97,7 @@ impl Publisher for AlphaVantage {
             self.output_size.to_string(),
             self.token
         ))?;
-        self.endpoint = dbg!(Some(constructed_url));
+        self.endpoint = Some(constructed_url);
         Ok(())
     }
 
@@ -108,7 +108,7 @@ impl Publisher for AlphaVantage {
                 .expect("Use create_endpoint method first to construct the URL"),
         );
         let response = client.get_data()?;
-        let body = dbg!(response.text()?);
+        let body = response.text()?;
 
         let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
         self.data = Some(prices);
@@ -159,7 +159,7 @@ impl Publisher for AlphaVantage {
 
 #[derive(Debug, Deserialize)]
 pub struct AlphaDailyPrices {
-    #[serde(flatten)]
+    #[serde(rename = "Meta Data")]
     pub meta_data: MetaData,
     #[serde(rename = "Time Series (Daily)")]
     pub time_series: HashMap<String, TimeSeriesData>,

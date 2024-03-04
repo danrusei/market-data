@@ -47,7 +47,7 @@ impl fmt::Display for MarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "MarketData: Symbol={}, Data=\n{}",
+            "MarketSeries: Symbol={}, Series=\n{}",
             self.symbol,
             self.data
                 .iter()
@@ -62,7 +62,7 @@ impl fmt::Display for Series {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Series: Date: {}, Open: {}, Close: {}, High: {}, Low: {}, Volume: {}",
+            "Date: {}, Open: {}, Close: {}, High: {}, Low: {}, Volume: {}",
             self.date, self.open, self.close, self.high, self.low, self.volume
         )
     }

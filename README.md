@@ -41,8 +41,8 @@ fn main() -> Result<()> {
 Trying to make the library easy to integrate new Publishers, therefore your contribution is welcome.
 So far the following are supported.
 
+* [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to)
-* [] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [] [Finazon](https://finazon.io/docs/api/latest#)
 * More to come
 

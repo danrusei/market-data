@@ -119,7 +119,7 @@ impl Publisher for AlphaVantage {
 
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
-            let mut data_series: Vec<Series> = Vec::new();
+            let mut data_series: Vec<Series> = Vec::with_capacity(data.time_series.len());
             for (date, series) in data.time_series.iter() {
                 let open: f32 = series.open.trim().parse().map_err(|e| {
                     MarketError::ParsingError(format!("Unable to parse Open field: {}", e))

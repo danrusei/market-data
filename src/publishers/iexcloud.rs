@@ -71,7 +71,7 @@ impl Publisher for Iex {
 
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
-            let mut data_series: Vec<Series> = Vec::new();
+            let mut data_series: Vec<Series> = Vec::with_capacity(data.len());
             for series in data.iter() {
                 let date: NaiveDate =
                     NaiveDate::parse_from_str(&series.date, "%Y-%m-%d").map_err(|e| {

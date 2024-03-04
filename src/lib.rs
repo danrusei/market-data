@@ -5,6 +5,7 @@ mod publishers;
 pub use publishers::{
     alphavantage::{AlphaVantage, OutputSize},
     iexcloud::Iex,
+    twelvedata::Twelvedata,
 };
 
 pub mod errors;

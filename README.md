@@ -38,11 +38,21 @@ fn main() -> Result<()> {
 
 ## Supported Publishers
 
-Trying to make the library easy to integrate new Publishers, therefore your contribution is welcome.
+Selected a number of sites that offer Free Tier, new Publishers can be added, your contribution is welcome.
 So far the following are supported.
 
 * [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
+* [x] [Twelvedata](https://twelvedata.com/docs#time-series)
 * [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to)
-* [] [Finazon](https://finazon.io/docs/api/latest#)
-* More to come
+
+Alternative options, to be implemented:
+
+* [] [Polygon](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
+* [] [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage)
+* [] [Marketstack](https://marketstack.com/documentation#historical_data)
+* [] [Tradier](https://documentation.tradier.com/brokerage-api/markets/get-history)
+* [] [Yahoo Finance site - maybe?](https://finance.yahoo.com/)
+* [] [Stook parse site- maybe?](https://stooq.com/q/d/?s=aapl.us&i=d&d1=20230907&d2=20240229)
+
+
 

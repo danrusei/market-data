@@ -25,3 +25,7 @@ path = "examples/series_from_iexcloud.rs"
 [[example]]
 name = "series_from_alphavantage"
 path = "examples/series_from_alphavantage.rs"
+
+[[example]]
+name = "series_from_twelvedata"
+path = "examples/series_from_twelvedata.rs"

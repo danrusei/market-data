@@ -1,19 +1,16 @@
-// Retrieve time series stock data from:
-// https://www.alphavantage.co/documentation/#time-series-data
+//! Fetch time series stock data from [AlphaVantage](https://www.alphavantage.co/documentation/#time-series-data)
+///
+/// Claim your [API Key](https://www.alphavantage.co/support/#api-key)
 //
-// Claim your API Key
-// https://www.alphavantage.co/support/#api-key
-//
-// Example Daily requests:
-// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo
-// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&outputsize=full&apikey=demo
-//
-// Example intraday requests:
-// The API will return the most recent 100 intraday OHLCV bars by default when the outputsize parameter is not set
-// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo
-// Query the most recent full 30 days of intraday data by setting outputsize=full
-// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&outputsize=full&apikey=demo
-
+/// Example Daily requests:
+/// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo
+/// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&outputsize=full&apikey=demo
+///
+/// Example intraday requests:
+/// The API will return the most recent 100 intraday OHLCV bars by default when the outputsize parameter is not set
+/// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo
+/// Query the most recent full 30 days of intraday data by setting outputsize=full
+/// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&outputsize=full&apikey=demo
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -29,6 +26,8 @@ use crate::{
 
 const BASE_URL: &str = "https://www.alphavantage.co/";
 
+/// Fetch time series stock data from [AlphaVantage](https://www.alphavantage.co/documentation/#time-series-data),
+/// implements Publisher trait
 #[derive(Debug, Default)]
 pub struct AlphaVantage {
     token: String,

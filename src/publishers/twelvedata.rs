@@ -1,20 +1,18 @@
-// Retrieve time series stock data from:
-// https://twelvedata.com/docs#time-series
+//! Fetch time series stock data from [Twelvedata](https://twelvedata.com/docs#time-series)
 //
-// Claim your API Key (Basic Free Account with 800 API credits per day)
-// https://twelvedata.com/pricing
-// https://support.twelvedata.com/en/articles/5615854-credits
-// For instance, if you access /time_series data for AAPL, MSFT, and TSLA - you would consume a total of (1 credit) * (3 symbols) = 3 credits.
-//
-// Example Daily requests:
-// https://api.twelvedata.com/time_series?symbol=AAPL&interval=1day&outputsize=50&apikey=your_api_key
-// outputsize parameter : Number of data points to retrieve, Supports values in the range from 1 to 5000, Default is 30
-// inteval : Supports: 1min, 5min, 15min, 30min, 45min, 1h, 2h, 4h, 1day, 1week, 1month
-//
-// Example intraday requests:
-// https://api.twelvedata.com/time_series?symbol=AAPL&interval=15min&apikey=your_api_key
-// https://api.twelvedata.com/time_series?symbol=AAPL&interval=1h&apikey=your_api_key
-
+/// Claim your API Key (Basic Free Account with 800 API credits per day)
+/// https://twelvedata.com/pricing
+/// https://support.twelvedata.com/en/articles/5615854-credits
+/// For instance, if you access /time_series data for AAPL, MSFT, and TSLA - you would consume a total of (1 credit) * (3 symbols) = 3 credits.
+///
+/// Example Daily requests:
+/// https://api.twelvedata.com/time_series?symbol=AAPL&interval=1day&outputsize=50&apikey=your_api_key
+/// outputsize parameter : Number of data points to retrieve, Supports values in the range from 1 to 5000, Default is 30
+/// inteval : Supports: 1min, 5min, 15min, 30min, 45min, 1h, 2h, 4h, 1day, 1week, 1month
+///
+/// Example intraday requests:
+/// https://api.twelvedata.com/time_series?symbol=AAPL&interval=15min&apikey=your_api_key
+/// https://api.twelvedata.com/time_series?symbol=AAPL&interval=1h&apikey=your_api_key
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -29,6 +27,7 @@ use crate::{
 
 const BASE_URL: &str = "https://api.twelvedata.com/time_series";
 
+/// Fetch time series stock data from [Twelvedata](https://twelvedata.com/docs#time-series), implements Publisher trait
 #[derive(Debug, Default)]
 pub struct Twelvedata {
     token: String,

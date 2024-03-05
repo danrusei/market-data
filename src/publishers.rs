@@ -4,6 +4,7 @@ pub(crate) mod twelvedata;
 
 use crate::{client::MarketSeries, errors::MarketResult};
 
+// This trait has to be implemented by all the added sites
 pub trait Publisher {
     fn create_endpoint(&mut self) -> MarketResult<()>;
     fn get_data(&mut self) -> MarketResult<()>;

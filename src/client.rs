@@ -1,3 +1,5 @@
+//! Market-Data client implementation
+
 use crate::{
     errors::MarketResult,
     indicators::{EnhancedMarketSeries, EnhancedSeries},
@@ -46,12 +48,14 @@ impl<T: Publisher> MarketClient<T> {
     }
 }
 
+/// Holds the parsed data from Publishers
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MarketSeries {
     pub symbol: String,
     pub data: Vec<Series>,
 }
 
+/// Series part of the MarketSeries
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Series {
     pub date: NaiveDate,

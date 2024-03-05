@@ -1,13 +1,11 @@
-// Retrieve time series stock data from:
-// https://iexcloud.io/docs/
-//
-// Example - retrieves historical data for Apple's daily stock price:
-// Reference https://iexcloud.io/docs/api/#historical-prices
-// https://api.iex.cloud/v1/stock/AAPL/chart/2y?token=YOUR-TOKEN-HERE
-//
-// Reference https://iexcloud.io/docs/core/HISTORICAL_PRICES
-// https://api.iex.cloud/v1/data/core/historical_prices/aapl?range=2y&token=YOUR-TOKEN-HERE
-
+//! Fetch time series stock data from [IEX](https://iexcloud.io/docs/), implements Publisher trait
+///
+/// Example - retrieves historical data for Apple's daily stock price:
+/// Reference https://iexcloud.io/docs/api/#historical-prices
+/// https://api.iex.cloud/v1/stock/AAPL/chart/2y?token=YOUR-TOKEN-HERE
+///
+/// Reference https://iexcloud.io/docs/core/HISTORICAL_PRICES
+/// https://api.iex.cloud/v1/data/core/historical_prices/aapl?range=2y&token=YOUR-TOKEN-HERE
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -21,6 +19,7 @@ use crate::{
 
 const BASE_URL: &str = "https://api.iex.cloud/v1/stock/";
 
+/// Fetch time series stock data from [IEX](https://iexcloud.io/docs/), implements Publisher trait
 #[derive(Debug, Default)]
 pub struct Iex {
     token: String,

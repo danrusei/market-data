@@ -8,6 +8,7 @@ pub(crate) mod ema;
 pub(crate) mod rsi;
 pub(crate) mod sma;
 
+/// Holds the MarketSeries + the calculation for the supported indicators
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EnhancedMarketSeries {
     pub symbol: String,
@@ -22,6 +23,7 @@ pub enum Indicator {
     RSI(usize),
 }
 
+/// It is part of the EnhancedMarketSeries struct
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct EnhancedSeries {
     pub date: NaiveDate,

@@ -2,7 +2,7 @@
 name = "market-data"
 version = "0.1.0"
 description = "A Rust lib to fetch & enhance historical time-series stock market data"
-keywords = ["stock time-series", "equities", "historical stock"]
+keywords = ["equity time-series", "equities", "market data"]
 authors = ["Dan Rusei <dan.rusei@gmail.com>"]
 repository = "https://github.com/danrusei/market-data"
 documentation = "https://docs.rs/market-data"

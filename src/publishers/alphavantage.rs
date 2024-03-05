@@ -15,7 +15,7 @@
 // https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&outputsize=full&apikey=demo
 
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use url::Url;
 
@@ -117,6 +117,15 @@ impl Publisher for AlphaVantage {
         Ok(())
     }
 
+    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
+        if let Some(data) = &self.data {
+            serde_json::to_writer(writer, data).map_err(|err| {
+                MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
+            })?;
+        }
+        Ok(())
+    }
+
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
             let mut data_series: Vec<Series> = Vec::with_capacity(data.time_series.len());
@@ -166,7 +175,7 @@ impl Publisher for AlphaVantage {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct AlphaDailyPrices {
     #[serde(rename = "Meta Data")]
     pub meta_data: MetaData,
@@ -174,7 +183,7 @@ pub struct AlphaDailyPrices {
     pub time_series: HashMap<String, TimeSeriesData>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MetaData {
     #[serde(rename = "1. Information")]
     pub information: String,
@@ -188,7 +197,7 @@ pub struct MetaData {
     pub time_zone: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct TimeSeriesData {
     #[serde(rename = "1. open")]
     pub open: String,

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
 use market_data::{AlphaVantage, MarketClient, OutputSize};
-use std::env::var;
+use std::{env::var, fs::File};
 
 lazy_static! {
     static ref TOKEN: String =
@@ -15,8 +15,16 @@ fn main() -> Result<()> {
     site.for_daily_series("AAPL".to_string(), OutputSize::Compact);
 
     let client = MarketClient::new(site);
-    // Creates the query URL, download raw data and transform into MarketSeries struct
-    let data = client.create_endpoint()?.get_data()?.transform_data()?;
+
+    // Creates the query URL & download the raw data
+    let client = client.create_endpoint()?.get_data()?;
+
+    // you can write the downloaded data to anything that implements std::io::Write , in this case a file
+    // let buffer = File::create("raw_alphavantage_json.txt")?;
+    // client.to_writer(buffer)?;
+
+    // or transform into MarketSeries struct for further processing
+    let data = client.transform_data()?;
 
     println!("{}", data);
 

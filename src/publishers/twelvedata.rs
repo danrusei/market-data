@@ -16,7 +16,7 @@
 // https://api.twelvedata.com/time_series?symbol=AAPL&interval=1h&apikey=your_api_key
 
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
@@ -85,6 +85,15 @@ impl Publisher for Twelvedata {
         Ok(())
     }
 
+    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
+        if let Some(data) = &self.data {
+            serde_json::to_writer(writer, data).map_err(|err| {
+                MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
+            })?;
+        }
+        Ok(())
+    }
+
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
             if data.status != "ok".to_string() {
@@ -140,7 +149,7 @@ impl Publisher for Twelvedata {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct TwelvedataDailyPrices {
     #[allow(dead_code)]
     meta: MetaData,
@@ -149,7 +158,7 @@ struct TwelvedataDailyPrices {
     status: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct MetaData {
     #[allow(dead_code)]
     symbol: String,
@@ -167,7 +176,7 @@ struct MetaData {
     r#type: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct TimeSeriesData {
     datetime: String,
     open: String,

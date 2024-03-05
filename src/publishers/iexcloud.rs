@@ -9,7 +9,7 @@
 // https://api.iex.cloud/v1/data/core/historical_prices/aapl?range=2y&token=YOUR-TOKEN-HERE
 
 use chrono::NaiveDate;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
@@ -69,6 +69,15 @@ impl Publisher for Iex {
         Ok(())
     }
 
+    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
+        if let Some(data) = &self.data {
+            serde_json::to_writer(writer, data).map_err(|err| {
+                MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
+            })?;
+        }
+        Ok(())
+    }
+
     fn transform_data(&self) -> MarketResult<MarketSeries> {
         if let Some(data) = self.data.as_ref() {
             let mut data_series: Vec<Series> = Vec::with_capacity(data.len());
@@ -102,7 +111,7 @@ impl Publisher for Iex {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct IexDailyPrices {
     close: f32,
     high: f32,

@@ -22,4 +22,7 @@ pub enum MarketError {
 
     #[error("Parsing error: {0}")]
     ParsingError(String),
+
+    #[error("Unable to write to: {0}")]
+    ToWriter(String),
 }

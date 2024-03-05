@@ -17,16 +17,25 @@ impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
         MarketClient { inner: site }
     }
+
     /// Creates the final query URL for the selected Provider
     pub fn create_endpoint(mut self) -> MarketResult<Self> {
         self.inner.create_endpoint()?;
         Ok(self)
     }
+
     /// Download the data series in the Provider format
     pub fn get_data(mut self) -> MarketResult<Self> {
         self.inner.get_data()?;
         Ok(self)
     }
+
+    /// Write the downloaded data to anything that implements std::io::Write , like File, TcpStream, Stdout, etc
+    pub fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
+        self.inner.to_writer(writer)?;
+        Ok(())
+    }
+
     /// Transform the downloaded Provider series into MarketSeries format
     pub fn transform_data(&self) -> MarketResult<MarketSeries> {
         let data = self.inner.transform_data().map_err(|err| {

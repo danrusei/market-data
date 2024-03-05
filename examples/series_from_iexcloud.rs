@@ -1,7 +1,8 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
 use market_data::{Iex, MarketClient};
-use std::{env::var, fs::File};
+use std::env::var;
+//use std::fs::File;
 
 lazy_static! {
     static ref TOKEN: String = var("IEX_TOKEN").expect("IEX_TOKEN env variable is required");
@@ -23,7 +24,16 @@ fn main() -> Result<()> {
     // or transform into MarketSeries struct for further processing
     let data = client.transform_data()?;
 
-    println!("{}", data);
+    //println!("{}", data);
+
+    let enhanced_data = data
+        .enhance_data()
+        .with_sma(10)
+        .with_ema(20)
+        .with_rsi(14)
+        .calculate();
+
+    println!("{}", enhanced_data);
 
     Ok(())
 }

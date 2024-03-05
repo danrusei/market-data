@@ -1,7 +1,8 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
 use market_data::{MarketClient, Twelvedata};
-use std::{env::var, fs::File};
+use std::env::var;
+//use std::fs::File;
 
 lazy_static! {
     static ref TOKEN: String =

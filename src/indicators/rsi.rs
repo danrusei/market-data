@@ -1,9 +1,13 @@
+use std::collections::VecDeque;
+
 use crate::EnhancedSeries;
 
-pub(crate) fn calculate_rsi(data: &Vec<EnhancedSeries>, period: usize) -> Vec<f32> {
-    let mut result: Vec<f32> = Vec::new();
+// calculation based on:
+// https://www.investopedia.com/terms/r/rsi.asp
+pub(crate) fn calculate_rsi(series: &[EnhancedSeries], period: usize) -> VecDeque<f32> {
+    let mut rsi_values: VecDeque<f32> = VecDeque::with_capacity(series.len());
 
-    for (i, window) in data.windows(period + 1).enumerate() {
+    for (_, window) in series.windows(period + 1).enumerate() {
         let mut gains = 0.0;
         let mut losses = 0.0;
 
@@ -25,8 +29,14 @@ pub(crate) fn calculate_rsi(data: &Vec<EnhancedSeries>, period: usize) -> Vec<f3
             100.0
         };
 
-        result.push(rsi_value);
+        rsi_values.push_back(rsi_value);
     }
 
-    result
+    for _ in 1..period + 1 {
+        rsi_values.push_front(0.0);
+    }
+
+    assert!(dbg!(rsi_values.len()) == dbg!(series.len()));
+
+    rsi_values
 }

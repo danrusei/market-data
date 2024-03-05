@@ -24,8 +24,13 @@ fn main() -> Result<()> {
     // or transform into MarketSeries struct for further processing
     let data = client.transform_data()?;
 
-    //println!("{}", data);
+    // println!("{}", data);
+    // Prints:
+    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420
+    // Date: 2024-02-27, Open: 181.1, Close: 182.63, High: 183.9225, Low: 179.56, Volume: 54318852
+    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940
 
+    // the data can be enhanced with the calculation of a series of indicators
     let enhanced_data = data
         .enhance_data()
         .with_sma(10)
@@ -34,6 +39,11 @@ fn main() -> Result<()> {
         .calculate();
 
     println!("{}", enhanced_data);
+
+    // Prints:
+    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420.00, SMA: 183.44, EMA: 185.25, RSI: 30.43,
+    // Date: 2024-02-27, Open: 181.10, Close: 182.63, High: 183.92, Low: 179.56, Volume: 54318852.00, SMA: 182.99, EMA: 185.00, RSI: 29.80,
+    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940.00, SMA: 182.63, EMA: 184.66, RSI: 27.31,
 
     Ok(())
 }

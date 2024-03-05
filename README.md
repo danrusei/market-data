@@ -10,30 +10,53 @@ use anyhow::Result;
 use lazy_static::lazy_static;
 use market_data::{Iex, MarketClient};
 use std::env::var;
+//use std::fs::File;
 
 lazy_static! {
     static ref TOKEN: String = var("IEX_TOKEN").expect("IEX_TOKEN env variable is required");
 }
 
 fn main() -> Result<()> {
-
-    // select a Publisher from where to download the market-data
-    // most of them requires an API Key, that can be obtain by creating an account
-    // check below the available Publishers
+    
+    // Check all the providers supported as they are slightly different
     let mut site = Iex::new(TOKEN.to_string());
     site.for_series("AAPL".to_string(), "3m".to_string());
 
-    // use MarketClient to create the request, retrieve the data and transform into MarketData struct
-    let mut client = MarketClient::new(site);
-    client.create_endpoint()?;
-    client.get_data()?;
-    let data = client.transform_data();
-    if let Some(data) = data {
-        println!("{}", data);
-    }
+    let client = MarketClient::new(site);
+
+    // Creates the query URL & download raw data and
+    let client = client.create_endpoint()?.get_data()?;
+
+    // you can write the downloaded data to anything that implements std::io::Write , in this case a file
+    // let buffer = File::create("raw_iex_json.txt")?;
+    // client.to_writer(buffer)?;
+
+    // or transform into MarketSeries struct for further processing
+    let data = client.transform_data()?;
+
+    println!("{}", data);
+    // Prints:
+    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420
+    // Date: 2024-02-27, Open: 181.1, Close: 182.63, High: 183.9225, Low: 179.56, Volume: 54318852
+    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940
+
+    // the data can be enhanced with the calculation of a series of indicators
+    let enhanced_data = data
+        .enhance_data()
+        .with_sma(10)
+        .with_ema(20)
+        .with_rsi(14)
+        .calculate();
+
+    println!("{}", enhanced_data);
+
+    // Prints:
+    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420.00, SMA: 183.44, EMA: 185.25, RSI: 30.43,
+    // Date: 2024-02-27, Open: 181.10, Close: 182.63, High: 183.92, Low: 179.56, Volume: 54318852.00, SMA: 182.99, EMA: 185.00, RSI: 29.80,
+    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940.00, SMA: 182.63, EMA: 184.66, RSI: 27.31,
+
     Ok(())
 }
-
 ```
 
 ## Supported Publishers

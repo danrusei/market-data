@@ -27,7 +27,17 @@ fn main() -> Result<()> {
     // or transform into MarketSeries struct for further processing
     let data = client.transform_data()?;
 
-    println!("{}", data);
+    // println!("{}", data);
+
+    // the data can be enhanced with the calculation of a series of indicators
+    let enhanced_data = data
+        .enhance_data()
+        .with_sma(10)
+        .with_ema(20)
+        .with_rsi(14)
+        .calculate();
+
+    println!("{}", enhanced_data);
 
     Ok(())
 }

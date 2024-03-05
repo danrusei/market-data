@@ -34,6 +34,7 @@ fn main() -> Result<()> {
         .enhance_data()
         .with_sma(10)
         .with_ema(20)
+        .with_ema(6)
         .with_rsi(14)
         .calculate();
 

@@ -12,7 +12,7 @@ lazy_static! {
 fn main() -> Result<()> {
     let mut site = Twelvedata::new(TOKEN.to_string());
     // output_size - supports values in the range from 1 to 5000 , default is 30.
-    site.for_daily_series("AAPL".to_string(), 50);
+    site.for_daily_series("AAPL".to_string(), 100);
 
     let client = MarketClient::new(site);
 
@@ -33,6 +33,7 @@ fn main() -> Result<()> {
         .enhance_data()
         .with_sma(10)
         .with_ema(20)
+        .with_ema(6)
         .with_rsi(14)
         .calculate();
 

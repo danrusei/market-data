@@ -36,7 +36,7 @@ pub(crate) fn calculate_rsi(series: &[EnhancedSeries], period: usize) -> VecDequ
         rsi_values.push_front(0.0);
     }
 
-    assert!(dbg!(rsi_values.len()) == dbg!(series.len()));
+    assert!(rsi_values.len() == series.len());
 
     rsi_values
 }

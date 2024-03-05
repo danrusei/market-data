@@ -46,15 +46,16 @@ fn main() -> Result<()> {
         .enhance_data()
         .with_sma(10)
         .with_ema(20)
+        .with_ema(6)
         .with_rsi(14)
         .calculate();
 
     println!("{}", enhanced_data);
 
     // Prints:
-    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420.00, SMA: 183.44, EMA: 185.25, RSI: 30.43,
-    // Date: 2024-02-27, Open: 181.10, Close: 182.63, High: 183.92, Low: 179.56, Volume: 54318852.00, SMA: 182.99, EMA: 185.00, RSI: 29.80,
-    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940.00, SMA: 182.63, EMA: 184.66, RSI: 27.31,
+    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420.00, SMA 10: 183.44, EMA 20: 185.25, EMA 6: 182.72, RSI 14: 30.43,
+    // Date: 2024-02-27, Open: 181.10, Close: 182.63, High: 183.92, Low: 179.56, Volume: 54318852.00, SMA 10: 182.99, EMA 20: 185.00, EMA 6: 182.69, RSI 14: 29.80,
+    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940.00, SMA 10: 182.63, EMA 20: 184.66, EMA 6: 182.33, RSI 14: 27.31,
 
     Ok(())
 }

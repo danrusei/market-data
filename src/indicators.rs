@@ -1,7 +1,7 @@
 use crate::indicators::{ema::calculate_ema, rsi::calculate_rsi, sma::calculate_sma};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
 pub(crate) mod ema;
@@ -33,11 +33,11 @@ pub struct EnhancedSeries {
     pub low: f32,
     pub volume: f32,
     // Simple Moving Average
-    pub sma: f32,
+    pub sma: BTreeMap<String, f32>,
     // Exponential Moving Average
-    pub ema: f32,
+    pub ema: BTreeMap<String, f32>,
     // Relative Strength Index
-    pub rsi: f32,
+    pub rsi: BTreeMap<String, f32>,
 }
 
 impl EnhancedMarketSeries {
@@ -76,9 +76,15 @@ impl EnhancedMarketSeries {
             for (j, ind) in self.indicators.iter().enumerate() {
                 match ind {
                     // Assuming the order in self.indicators matches the order in result
-                    Indicator::SMA(_) => series.sma = result[j][i],
-                    Indicator::EMA(_) => series.ema = result[j][i],
-                    Indicator::RSI(_) => series.rsi = result[j][i],
+                    Indicator::SMA(value) => {
+                        series.sma.insert(format!("SMA {}", value), result[j][i]);
+                    }
+                    Indicator::EMA(value) => {
+                        series.ema.insert(format!("EMA {}", value), result[j][i]);
+                    }
+                    Indicator::RSI(value) => {
+                        series.rsi.insert(format!("RSI {}", value), result[j][i]);
+                    }
                 }
             }
         }
@@ -106,9 +112,23 @@ impl fmt::Display for EnhancedSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Date: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}, SMA: {:.2}, EMA: {:.2}, RSI: {:.2}\n",
-            self.date, self.open, self.close, self.high, self.low, self.volume, self.sma, self.ema, self.rsi
-        )
+            "Date: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2},",
+            self.date, self.open, self.close, self.high, self.low, self.volume
+        )?;
+
+        for (key, value) in &self.sma {
+            write!(f, " {}: {:.2},", key, value)?;
+        }
+
+        for (key, value) in &self.ema {
+            write!(f, " {}: {:.2},", key, value)?;
+        }
+
+        for (key, value) in &self.rsi {
+            write!(f, " {}: {:.2}", key, value)?;
+        }
+
+        Ok(())
     }
 }
 

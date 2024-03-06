@@ -6,10 +6,11 @@ use std::env::var;
 
 lazy_static! {
     static ref TOKEN: String =
-        var("Twelvedata_TOKEN").expect("AlphaVantage_TOKEN env variable is required");
+        var("Twelvedata_TOKEN").expect("Twelvedata_TOKEN env variable is required");
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let mut site = Twelvedata::new(TOKEN.to_string());
     // output_size - supports values in the range from 1 to 5000 , default is 30.
     site.for_daily_series("AAPL".to_string(), 100);
@@ -17,7 +18,7 @@ fn main() -> Result<()> {
     let client = MarketClient::new(site);
 
     // Creates the query URL & download raw data
-    let client = client.create_endpoint()?.get_data()?;
+    let client = client.create_endpoint()?.get_data().await?;
 
     // you can write the downloaded data to anything that implements std::io::Write , in this case a file
     // let buffer = File::create("raw_twelvedata_json.txt")?;

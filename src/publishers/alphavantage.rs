@@ -101,6 +101,7 @@ impl Publisher for AlphaVantage {
         Ok(())
     }
 
+    #[cfg(feature = "use-sync")]
     fn get_data(&mut self) -> MarketResult<()> {
         let client = Client::new(
             self.endpoint
@@ -108,7 +109,23 @@ impl Publisher for AlphaVantage {
                 .expect("Use create_endpoint method first to construct the URL"),
         );
         let response = client.get_data()?;
-        let body = response.text()?;
+        let body = response.into_string()?;
+
+        let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
+        self.data = Some(prices);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "use-async")]
+    async fn get_data(&mut self) -> MarketResult<()> {
+        let client = Client::new(
+            self.endpoint
+                .clone()
+                .expect("Use create_endpoint method first to construct the URL"),
+        );
+        let response = client.get_data().await?;
+        let body = response.text().await?;
 
         let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
         self.data = Some(prices);

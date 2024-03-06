@@ -27,6 +27,14 @@ impl<T: Publisher> MarketClient<T> {
     }
 
     /// Download the data series in the Provider format
+    #[cfg(feature = "use-async")]
+    pub async fn get_data(mut self) -> MarketResult<Self> {
+        self.inner.get_data().await?;
+        Ok(self)
+    }
+
+    /// Download the data series in the Provider format
+    #[cfg(feature = "use-sync")]
     pub fn get_data(mut self) -> MarketResult<Self> {
         self.inner.get_data()?;
         Ok(self)

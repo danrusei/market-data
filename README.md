@@ -1,10 +1,13 @@
 # market-data
 
 A Rust lib to fetch & enhance historical time-series stock market data.
+For fetching data a Sync version using [ureq](https://crates.io/crates/ureq) http client, to reduce the dependencies but also an Async version using [reqwest](https://crates.io/crates/reqwest) http client.
+
+For async enable feature in dependency: ```market-data = { version = "*", features = ["use-async"] }```
 
 ## Usage
 
-Check the [Example folder](https://github.com/danrusei/market-data/tree/master/examples) for more examples.
+Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for more examples.
 
 ```rust
 use anyhow::Result;
@@ -70,7 +73,7 @@ So far the following are supported.
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)
 * [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to)
 
-Alternative series providers, to be implemented:
+Alternative providers, to be added:
 
 * [] [Polygon](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
 * [] [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage)
@@ -78,6 +81,33 @@ Alternative series providers, to be implemented:
 * [] [Tradier](https://documentation.tradier.com/brokerage-api/markets/get-history)
 * [] [Yahoo Finance site - maybe?](https://finance.yahoo.com/)
 * [] [Stook parse site- maybe?](https://stooq.com/q/d/?s=aapl.us&i=d&d1=20230907&d2=20240229)
+
+
+## Supported Market Technical Indicators
+
+* [x] [Simple Moving Average (SMA)](https://www.investopedia.com/terms/s/sma.asp)
+* [x] [Exponential Moving Averages (EMA)](https://www.investopedia.com/terms/e/ema.asp)
+* [x] [Relative Strength Index (RSI)](https://www.investopedia.com/terms/r/rsi.asp)
+
+Others to be implemented:
+
+* [Stochastic Oscillator](https://www.investopedia.com/terms/s/stochasticoscillator.asp)
+* [Moving Average Convergence/Divergence](https://www.investopedia.com/terms/m/macd.asp)
+* and others
+
+
+## Running the examples during development
+
+Make sure that the api keys are exported, like: export Publisher_TOKEN=<your_toke_here>
+
+In Cargo.toml use-sync is the default feature.
+
+```bash
+cargo run --example series_alphavantage
+cargo run --example series_iexcloud
+cargo run --example series_twelvedata
+cargo run --example async_series_twelvedata --features="use-async" --no-default-features
+```
 
 
 

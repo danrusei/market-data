@@ -8,8 +8,13 @@ pub enum MarketError {
     #[error("Error parsing the Url: {0}")]
     UrlParseError(#[from] url::ParseError),
 
+    #[cfg(feature = "use-async")]
     #[error("Unable to retrieve data: {0}")]
     RetriveDataError(#[from] reqwest::Error),
+
+    #[cfg(feature = "use-sync")]
+    #[error("Unable to retrieve data: {0}")]
+    RetriveDataError(#[from] std::io::Error),
 
     #[error("Unable to deserialize: {0}")]
     UnableToDeserialize(#[from] serde_json::error::Error),

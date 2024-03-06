@@ -53,14 +53,31 @@ impl Publisher for Iex {
         Ok(())
     }
 
+    #[cfg(feature = "use-sync")]
     fn get_data(&mut self) -> MarketResult<()> {
+        let rest_client = Client::new(
+            self.endpoint
+                .clone()
+                .expect("Use create_endpoint method first to construct the URL"),
+        );
+        let response = rest_client.get_data()?;
+        let body = response.into_string()?;
+
+        let prices: Vec<IexDailyPrices> = serde_json::from_str(&body)?;
+        self.data = Some(prices);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "use-async")]
+    async fn get_data(&mut self) -> MarketResult<()> {
         let client = Client::new(
             self.endpoint
                 .clone()
                 .expect("Use create_endpoint method first to construct the URL"),
         );
-        let response = client.get_data()?;
-        let body = response.text()?;
+        let response = client.get_data().await?;
+        let body = response.text().await?;
 
         let prices: Vec<IexDailyPrices> = serde_json::from_str(&body)?;
         self.data = Some(prices);

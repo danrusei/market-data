@@ -103,10 +103,10 @@ Make sure that the api keys are exported, like: export Publisher_TOKEN=<your_tok
 In Cargo.toml use-sync is the default feature.
 
 ```bash
-cargo run --example series_alphavantage
-cargo run --example series_iexcloud
-cargo run --example series_twelvedata
-cargo run --example async_series_twelvedata --features="use-async" --no-default-features
+cargo run --example example_name
+
+// for async
+cargo run --example async_example_name --features="use-async" --no-default-features
 ```
 
 

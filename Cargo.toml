@@ -8,7 +8,6 @@ repository = "https://github.com/danrusei/market-data"
 documentation = "https://docs.rs/market-data"
 readme = "README.md"
 license = "Apache-2.0"
-license-file = "LICENSE"
 edition = "2021"
 exclude = [".github/*",]
 

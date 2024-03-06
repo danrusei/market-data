@@ -1,0 +1,27 @@
+name: Market-Data
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --verbose
+      - name: Run example series_alphavantage
+        run: cargo test --example series_alphavantage
+      - name: Run example series_iexcloud
+        run: cargo test --example series_iexcloud
+      - name: Run example series_twelvedata
+        run: cargo test --example series_twelvedata
+      - name: Run example async_series_twelvedata
+        run: cargo test --example async_series_twelvedata --features="use-async" --no-default-features

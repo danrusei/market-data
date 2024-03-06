@@ -1,7 +1,8 @@
 # market-data
 
 A Rust lib to fetch & enhance historical time-series stock market data.
-For fetching data a Sync version using [ureq](https://crates.io/crates/ureq) http client, to reduce the dependencies but also an Async version using [reqwest](https://crates.io/crates/reqwest) http client.
+
+For fetching data the Sync version using [ureq](https://crates.io/crates/ureq) http client is default, to reduce dependencies, however an Async version using [reqwest](https://crates.io/crates/reqwest) http client is available.
 
 For async enable feature in dependency: ```market-data = { version = "*", features = ["use-async"] }```
 

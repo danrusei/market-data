@@ -4,7 +4,6 @@ use crate::{
     errors::MarketResult,
     indicators::{EnhancedMarketSeries, EnhancedSeries},
     publishers::Publisher,
-    MarketError,
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -47,12 +46,8 @@ impl<T: Publisher> MarketClient<T> {
     }
 
     /// Transform the downloaded Provider series into MarketSeries format
-    pub fn transform_data(&self) -> MarketResult<MarketSeries> {
-        let data = self.inner.transform_data().map_err(|err| {
-            MarketError::DownloadedData(format!("Unable to transform the data: {}", err))
-        })?;
-
-        Ok(data)
+    pub fn transform_data(&self) -> Vec<MarketResult<MarketSeries>> {
+        self.inner.transform_data()
     }
 }
 
@@ -60,6 +55,7 @@ impl<T: Publisher> MarketClient<T> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MarketSeries {
     pub symbol: String,
+    pub interval: String,
     pub data: Vec<Series>,
 }
 
@@ -101,8 +97,9 @@ impl fmt::Display for MarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "MarketSeries: Symbol={}, Series=\n{}",
+            "MarketSeries: Symbol = {}, Interval = {}, Series =\n{}",
             self.symbol,
+            self.interval,
             self.data
                 .iter()
                 .map(|series| format!("  {}", series))

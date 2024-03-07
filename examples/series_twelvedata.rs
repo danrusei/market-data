@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
-use market_data::{MarketClient, Twelvedata};
+use market_data::{Interval, MarketClient, Twelvedata};
 use std::env::var;
 //use std::fs::File;
 
@@ -12,7 +12,9 @@ lazy_static! {
 fn main() -> Result<()> {
     let mut site = Twelvedata::new(TOKEN.to_string());
     // output_size - supports values in the range from 1 to 5000 , default is 30.
-    site.for_daily_series("AAPL".to_string(), 100);
+    site.daily_series("AAPL".to_string(), 100);
+    site.intraday_series("AAPL".to_string(), 200, Interval::Hour1);
+    site.weekly_series("GOOGL".to_string(), 50);
 
     let client = MarketClient::new(site);
 
@@ -24,20 +26,23 @@ fn main() -> Result<()> {
     // client.to_writer(buffer)?;
 
     // or transform into MarketSeries struct for further processing
-    let data = client.transform_data()?;
+    let data = client.transform_data();
 
-    // println!("{}", data);
+    data.iter().for_each(|output| match output {
+        Ok(data) => println!("{}\n\n", data),
+        Err(err) => println!("{}", err),
+    });
 
     // the data can be enhanced with the calculation of a series of indicators
-    let enhanced_data = data
-        .enhance_data()
-        .with_sma(10)
-        .with_ema(20)
-        .with_ema(6)
-        .with_rsi(14)
-        .calculate();
+    // let enhanced_data = data
+    //     .enhance_data()
+    //     .with_sma(10)
+    //     .with_ema(20)
+    //     .with_ema(6)
+    //     .with_rsi(14)
+    //     .calculate();
 
-    println!("{}", enhanced_data);
+    // println!("{}", enhanced_data);
 
     Ok(())
 }

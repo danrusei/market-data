@@ -2,12 +2,10 @@
 use reqwest::Response;
 #[cfg(feature = "use-sync")]
 use ureq::{Error as ureqError, Response};
-use url::Url;
 
 use crate::{errors::MarketResult, MarketError};
 
 pub struct Client {
-    host: Url,
     #[cfg(feature = "use-async")]
     inner_client: reqwest::Client,
     #[cfg(feature = "use-sync")]
@@ -15,9 +13,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub(crate) fn new(host: Url) -> Self {
+    pub(crate) fn new() -> Self {
         Client {
-            host: host,
             #[cfg(feature = "use-async")]
             inner_client: reqwest::Client::builder()
                 .pool_idle_timeout(None)
@@ -44,11 +41,11 @@ impl Client {
     }
 
     #[cfg(feature = "use-sync")]
-    pub(crate) fn get_data(&self) -> MarketResult<Response> {
+    pub(crate) fn get_data(&self, endpoint: &url::Url) -> MarketResult<Response> {
         let client = &self.inner_client;
 
         // Make an Synchronous GET request
-        match client.get(self.host.as_str()).call() {
+        match client.get(endpoint.as_str()).call() {
             Ok(response) => Ok(response),
             Err(ureqError::Status(code, response)) => {
                 // the server returned an unexpected status code (such as 400, 500 etc)

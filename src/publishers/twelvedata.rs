@@ -122,6 +122,7 @@ impl Publisher for Twelvedata {
                 constructed_url
             })
             .collect();
+        self.requests.clear();
         Ok(())
     }
 
@@ -135,6 +136,7 @@ impl Publisher for Twelvedata {
             let prices: TwelvedataPrices = serde_json::from_str(&body)?;
             self.data.push(prices);
         }
+        self.endpoints.clear();
 
         Ok(())
     }

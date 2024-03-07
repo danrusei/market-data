@@ -11,17 +11,17 @@ use std::fmt;
 
 /// MarketClient holds the Publisher
 pub struct MarketClient<T: Publisher> {
-    inner: T,
+    pub site: T,
 }
 
 impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
-        MarketClient { inner: site }
+        MarketClient { site }
     }
 
     /// Creates the final query URL for the selected Provider
     pub fn create_endpoint(mut self) -> MarketResult<Self> {
-        self.inner.create_endpoint()?;
+        self.site.create_endpoint()?;
         Ok(self)
     }
 
@@ -35,19 +35,19 @@ impl<T: Publisher> MarketClient<T> {
     /// Download the data series in the Provider format
     #[cfg(feature = "use-sync")]
     pub fn get_data(mut self) -> MarketResult<Self> {
-        self.inner.get_data()?;
+        self.site.get_data()?;
         Ok(self)
     }
 
     /// Write the downloaded data to anything that implements std::io::Write , like File, TcpStream, Stdout, etc
     pub fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        self.inner.to_writer(writer)?;
+        self.site.to_writer(writer)?;
         Ok(())
     }
 
     /// Transform the downloaded Provider series into MarketSeries format
     pub fn transform_data(&self) -> Vec<MarketResult<MarketSeries>> {
-        self.inner.transform_data()
+        self.site.transform_data()
     }
 }
 

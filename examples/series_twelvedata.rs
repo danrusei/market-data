@@ -12,15 +12,22 @@ lazy_static! {
 fn main() -> Result<()> {
     let mut site = Twelvedata::new(TOKEN.to_string());
     // output_size - supports values in the range from 1 to 5000 , default is 30.
-    site.daily_series("AAPL".to_string(), 100);
-    site.intraday_series("AAPL".to_string(), 200, Interval::Hour1);
+    // site.daily_series("AAPL".to_string(), 100);
+    // site.intraday_series("AAPL".to_string(), 50, Interval::Hour1);
     site.weekly_series("GOOGL".to_string(), 50);
 
-    let client = MarketClient::new(site);
+    let mut client = MarketClient::new(site);
+
+    client.site.daily_series("Googl".to_string(), 30);
 
     // Creates the query URL & download raw data
-    let client = client.create_endpoint()?.get_data()?;
+    let mut client = client.create_endpoint()?.get_data()?;
 
+    client
+        .site
+        .intraday_series("msft".to_string(), 30, Interval::Hour2);
+
+    let client = client.create_endpoint()?.get_data()?;
     // you can write the downloaded data to anything that implements std::io::Write , in this case a file
     // let buffer = File::create("raw_twelvedata_json.txt")?;
     // client.to_writer(buffer)?;

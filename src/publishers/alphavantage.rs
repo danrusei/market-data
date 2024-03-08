@@ -40,35 +40,40 @@ pub struct AlphaVantage {
 pub struct AVRequest {
     symbol: String,
     function: Function,
-    interval: Option<Interval>,
+    interval: Option<AlphaInterval>,
     output_size: OutputSize,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum Interval {
+#[derive(Debug, Default, PartialEq)]
+pub enum AlphaInterval {
     Min1,
     Min5,
     Min15,
     Min30,
+    #[default]
     Min60,
 }
 
 #[derive(Debug, Default, PartialEq)]
 pub enum Function {
     // https://www.alphavantage.co/documentation/#intraday
+    #[allow(dead_code)]
     TimeSeriesIntraday,
     // https://www.alphavantage.co/documentation/#daily
     #[default]
     TimeSeriesDaily,
     //https://www.alphavantage.co/documentation/#dailyadj
+    #[allow(dead_code)]
     TimeSeriesDailyAdjusted,
     //https://www.alphavantage.co/documentation/#weekly
     TimeSeriesWeekly,
     //https://www.alphavantage.co/documentation/#weeklyadj
+    #[allow(dead_code)]
     TimeSeriesWeeklyAdjusted,
     //https://www.alphavantage.co/documentation/#monthly
     TimeSeriesMonthly,
     //https://www.alphavantage.co/documentation/#monthlyadj
+    #[allow(dead_code)]
     TimeSeriesMonthlyAdjusted,
 }
 
@@ -94,17 +99,30 @@ impl AlphaVantage {
     /// Request for intraday series
     pub fn intraday_series(
         &mut self,
-        symbol: String,
-        output_size: OutputSize,
-        interval: Interval,
+        _symbol: String,
+        _output_size: OutputSize,
+        _interval: AlphaInterval,
     ) -> () {
-        let function = Function::TimeSeriesIntraday;
-        self.requests.push(AVRequest {
-            symbol,
-            function,
-            interval: Some(interval),
-            output_size,
-        });
+        // Not supported yet as the Metadata is different
+
+        //"Meta Data\":
+        //"1. Information\": \"Intraday (30min) open, high, low, close prices and volume\",\n
+        //\"2. Symbol\": \"MSFT\",\n
+        //\"3. Last Refreshed\": \"2024-03-07 19:30:00\",\n
+        //\"4. Interval\": \"30min\",\n
+        //\"5. Output Size\": \"Compact\",\n
+        //\"6. Time Zone\": \"US/Eastern\"\n    },
+
+        todo!(
+            "Intraday Not suported yet as the metadata has to be deserialized into another struct"
+        );
+        // let function = Function::TimeSeriesIntraday;
+        // self.requests.push(AVRequest {
+        //     symbol,
+        //     function,
+        //     interval: Some(interval),
+        //     output_size,
+        // });
     }
 
     /// Request for daily series
@@ -150,7 +168,16 @@ impl Publisher for AlphaVantage {
             .map(|request| {
                 let constructed_url = match request.function {
                     Function::TimeSeriesIntraday => {
-                        todo!()
+                        base_url
+                        .join(&format!(
+                            "query?function={}&symbol={}&interval={}&outputsize={}&datatype=json&apikey={}",
+                            request.function.to_string(),
+                            request.symbol,
+                            request.interval.as_ref().unwrap().to_string(),
+                            request.output_size.to_string(),
+                            self.token
+                        ))
+                        .unwrap()
                     }
                     _ => base_url
                         .join(&format!(
@@ -177,7 +204,7 @@ impl Publisher for AlphaVantage {
         let rest_client = Client::new();
         for endpoint in &self.endpoints {
             let response = rest_client.get_data(endpoint)?;
-            let body = response.into_string()?;
+            let body = dbg!(response.into_string()?);
 
             let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
             self.data.push(prices);
@@ -307,7 +334,7 @@ fn transform(data: &AlphaDailyPrices) -> MarketResult<MarketSeries> {
 
     Ok(MarketSeries {
         symbol: data.meta_data.symbol.clone(),
-        interval: "unknown".to_string(),
+        interval: "not_implemented".to_string(),
         data: data_series,
     })
 }
@@ -334,14 +361,14 @@ impl ToString for OutputSize {
     }
 }
 
-impl ToString for Interval {
+impl ToString for AlphaInterval {
     fn to_string(&self) -> String {
         match self {
-            Interval::Min1 => String::from("1min"),
-            Interval::Min5 => String::from("5min"),
-            Interval::Min15 => String::from("15min"),
-            Interval::Min30 => String::from("30min"),
-            Interval::Min60 => String::from("60min"),
+            AlphaInterval::Min1 => String::from("1min"),
+            AlphaInterval::Min5 => String::from("5min"),
+            AlphaInterval::Min15 => String::from("15min"),
+            AlphaInterval::Min30 => String::from("30min"),
+            AlphaInterval::Min60 => String::from("60min"),
         }
     }
 }

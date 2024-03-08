@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
-use market_data::{AlphaVantage, EnhancedMarketSeries, MarketClient, OutputSize};
+use market_data::{AlphaInterval, AlphaVantage, EnhancedMarketSeries, MarketClient, OutputSize};
 use std::env::var;
 //use std::fs::File;
 
@@ -33,6 +33,7 @@ fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
+    // client.site.intraday_series( "MSFT".to_string(), OutputSize::Compact, AlphaInterval::Min30,);
     client
         .site
         .weekly_series("MSFT".to_string(), OutputSize::Compact);

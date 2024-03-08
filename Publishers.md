@@ -52,7 +52,7 @@ let mut site = AlphaVantage::new(TOKEN.to_string());
 For the requested instrument select the time series. Multiple can be added. 
 The available methods:
 
-* *intraday_series (symbol: String, output_size: OutputSize, interval: Interval)* - NOT supported yet, different Metadata
+* *intraday_series (symbol: String, output_size: OutputSize, interval: Interval)* - NOT yet supported, parsing issues
 * *daily_series (symbol: String, output_size: OutputSize)*
 * *weekly_series (symbol: String, output_size: OutputSize)*
 * *monthly_series (symbol: String, output_size: OutputSize)*
@@ -60,8 +60,8 @@ The available methods:
 Example:
 ```rust
 site.daily_series("AAPL".to_string(), OutputSize::Compact);
-site.intraday_series("MSFT".to_string(), OutputSize::Compact, Interval::Min60);
-site.weekly_series("GOOGL".to_string(), OutputSize::Compact); 
+site.weekly_series("GOOGL".to_string(), OutputSize::Compact);
+site.intraday_series("MSFT".to_string(), OutputSize::Compact, Interval::Min60); -- not yet supported
 ```
 
 **output_size** :

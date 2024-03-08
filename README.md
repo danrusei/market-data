@@ -2,67 +2,72 @@
 
 A Rust lib to fetch & enhance historical time-series stock market data.
 
-For fetching data the Sync version using [ureq](https://crates.io/crates/ureq) http client is default, to reduce dependencies, however an Async version using [reqwest](https://crates.io/crates/reqwest) http client is available.
+For fetching the data a Sync version can be used with [ureq](https://crates.io/crates/ureq) http client, or the Async version using [reqwest](https://crates.io/crates/reqwest) http client.
 
-For async enable feature in dependency: ```market-data = { version = "*", features = ["use-async"] }```
+To enable async feature:
+
+```market-data = { version = "*", features = ["use-async"] }```
 
 ## Usage
 
 Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for more examples.
 
 ```rust
-use anyhow::Result;
-use lazy_static::lazy_static;
-use market_data::{Iex, MarketClient};
-use std::env::var;
-//use std::fs::File;
+    // Select a Publisher from the available ones
+    let mut site = Twelvedata::new(TOKEN.to_string());
 
-lazy_static! {
-    static ref TOKEN: String = var("IEX_TOKEN").expect("IEX_TOKEN env variable is required");
-}
+    // configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
+    // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
+    // multiple requests can be added
+    site.weekly_series("GOOGL".to_string(), 40);
+    site.daily_series("GOOGL".to_string(), 30);
 
-fn main() -> Result<()> {
-    
-    // Check all the providers supported as they are slightly different
-    let mut site = Iex::new(TOKEN.to_string());
-    site.for_series("AAPL".to_string(), "3m".to_string());
+    // create the MarketClient
+    let mut client = MarketClient::new(site);
 
-    let client = MarketClient::new(site);
+    // creates the query URL & download the raw data
+    client = client.create_endpoint()?.get_data()?;
+    // transform into MarketSeries, that can be used for further processing
+    let data = client.transform_data();
 
-    // Creates the query URL & download raw data and
-    let client = client.create_endpoint()?.get_data()?;
+    // prints the data
+    data.iter().for_each(|output| match output {
+        Ok(data) => println!("{}\n\n", data),
+        Err(err) => println!("{}", err),
+    });
 
-    // you can write the downloaded data to anything that implements std::io::Write , in this case a file
-    // let buffer = File::create("raw_iex_json.txt")?;
-    // client.to_writer(buffer)?;
+    // the client can be reused for additional series
+    client
+        .site
+        .intraday_series("MSFT".to_string(), 60, Interval::Hour2);
 
-    // or transform into MarketSeries struct for further processing
-    let data = client.transform_data()?;
+    // the consuming the client pattern, the client can't be reused for configuring new series
+    let data2 = client.create_endpoint()?.get_data()?.transform_data();
 
-    println!("{}", data);
+    // the data can be enhanced with the calculation of a number of  market indicators
+    let enhanced_data: Vec<EnhancedMarketSeries> = data2
+        .into_iter()
+        .filter_map(|series| series.ok())
+        .map(|series| {
+            series
+                .enhance_data()
+                .with_sma(10)
+                .with_ema(20)
+                .with_ema(6)
+                .with_rsi(14)
+                .calculate()
+        })
+        .collect();
+
+    enhanced_data
+        .into_iter()
+        .for_each(|enhanced_series| println!("{}", enhanced_series));
+
     // Prints:
-    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420
-    // Date: 2024-02-27, Open: 181.1, Close: 182.63, High: 183.9225, Low: 179.56, Volume: 54318852
-    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940
-
-    // the data can be enhanced with the calculation of a series of indicators
-    let enhanced_data = data
-        .enhance_data()
-        .with_sma(10)
-        .with_ema(20)
-        .with_ema(6)
-        .with_rsi(14)
-        .calculate();
-
-    println!("{}", enhanced_data);
-
-    // Prints:
-    // Date: 2024-02-26, Open: 182.24, Close: 181.16, High: 182.76, Low: 180.65, Volume: 40867420.00, SMA 10: 183.44, EMA 20: 185.25, EMA 6: 182.72, RSI 14: 30.43,
-    // Date: 2024-02-27, Open: 181.10, Close: 182.63, High: 183.92, Low: 179.56, Volume: 54318852.00, SMA 10: 182.99, EMA 20: 185.00, EMA 6: 182.69, RSI 14: 29.80,
-    // Date: 2024-02-28, Open: 182.51, Close: 181.42, High: 183.12, Low: 180.13, Volume: 48953940.00, SMA 10: 182.63, EMA 20: 184.66, EMA 6: 182.33, RSI 14: 27.31,
-
-    Ok(())
-}
+    // Date: 2024-02-23, Open: 410.14, Close: 410.32, High: 410.85, Low: 409.84, Volume: 1814939.00, SMA 10: 405.48, EMA 20: 405.94, EMA 6: 408.56, RSI 14: 59.19,
+    // Date: 2024-02-23, Open: 410.11, Close: 410.12, High: 410.78, Low: 409.53, Volume: 1998775.00, SMA 10: 406.31, EMA 20: 406.34, EMA 6: 409.00, RSI 14: 57.86,
+    // Date: 2024-02-23, Open: 410.77, Close: 410.11, High: 410.86, Low: 408.97, Volume: 2621471.00, SMA 10: 407.10, EMA 20: 406.70, EMA 6: 409.32, RSI 14: 64.33,
+    // Date: 2024-02-23, Open: 415.67, Close: 410.73, High: 415.86, Low: 410.09, Volume: 6230853.00, SMA 10: 408.32, EMA 20: 407.08, EMA 6: 409.72, RSI 14: 68.58,
 ```
 
 ## Supported Publishers
@@ -97,11 +102,13 @@ Others to be implemented:
 * and others
 
 
-## Running the examples during development
+## For development
 
-Make sure that the api keys are exported, like: export Publisher_TOKEN=<your_toke_here>
+Export the API Keys, as: export Publisher_TOKEN=<your_toke_here>
 
-In Cargo.toml use-sync is the default feature.
+Default feature in Cargo.toml is use-sync, if working on async version change the default to use-async.
+
+Run the examples:
 
 ```bash
 cargo run --example example_name

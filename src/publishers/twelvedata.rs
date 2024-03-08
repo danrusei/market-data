@@ -122,6 +122,7 @@ impl Publisher for Twelvedata {
                 constructed_url
             })
             .collect();
+        // self.requests have to be consumed once used for creating the endpoints
         self.requests.clear();
         Ok(())
     }
@@ -136,6 +137,7 @@ impl Publisher for Twelvedata {
             let prices: TwelvedataPrices = serde_json::from_str(&body)?;
             self.data.push(prices);
         }
+        // self.endpoints have to be consumed once the data was downloaded for requested URL
         self.endpoints.clear();
 
         Ok(())
@@ -148,11 +150,16 @@ impl Publisher for Twelvedata {
                 .clone()
                 .expect("Use create_endpoint method first to construct the URL"),
         );
-        let response = client.get_data().await?;
-        let body = response.text().await?;
+        for endpoint in &self.endpoints {
+            let response = client.get_data().await?;
+            let body = response.text().await?;
 
-        let prices: TwelvedataDailyPrices = serde_json::from_str(&body)?;
-        self.data = Some(prices);
+            let prices: TwelvedataDailyPrices = serde_json::from_str(&body)?;
+            self.data.push(prices);
+        }
+
+        // self.endpoints have to be consumed once the data was downloaded for requested URL
+        self.endpoints.clear();
 
         Ok(())
     }
@@ -164,12 +171,15 @@ impl Publisher for Twelvedata {
         Ok(())
     }
 
-    fn transform_data(&self) -> Vec<MarketResult<MarketSeries>> {
+    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
         let mut result = Vec::new();
-        for data in &self.data {
+        for data in self.data.iter() {
             let parsed_data = transform(data);
             result.push(parsed_data)
         }
+
+        // self.data have to be consumed once the data is transformed to MarketSeries
+        self.data.clear();
         result
     }
 }

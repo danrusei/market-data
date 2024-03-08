@@ -46,7 +46,7 @@ impl<T: Publisher> MarketClient<T> {
     }
 
     /// Transform the downloaded Provider series into MarketSeries format
-    pub fn transform_data(&self) -> Vec<MarketResult<MarketSeries>> {
+    pub fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
         self.site.transform_data()
     }
 }

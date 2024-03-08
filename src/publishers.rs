@@ -1,4 +1,4 @@
-// pub(crate) mod alphavantage;
+pub(crate) mod alphavantage;
 // pub(crate) mod iexcloud;
 pub(crate) mod twelvedata;
 

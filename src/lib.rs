@@ -15,7 +15,7 @@ pub use client::{MarketClient, MarketSeries, Series};
 
 mod publishers;
 pub use publishers::{
-    //   alphavantage::{AlphaVantage, OutputSize},
+    alphavantage::{AlphaVantage, OutputSize},
     //   iexcloud::Iex,
     twelvedata::{Interval, Twelvedata},
 };

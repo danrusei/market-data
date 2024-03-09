@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
-use market_data::{AlphaVantage, MarketClient, OutputSize};
+use market_data::{AlphaVantage, EnhancedMarketSeries, MarketClient, OutputSize};
 use std::env::var;
 //use std::fs::File;
 
@@ -10,35 +10,55 @@ lazy_static! {
 }
 
 fn main() -> Result<()> {
+    // Select a Alpha Vantage as publisher
     let mut site = AlphaVantage::new(TOKEN.to_string());
+
     // OutputSize::Compact - returns only the latest 100 data points
     // OutputSize::Full - returns the full-length time series of 20+ years of historical data
-    site.for_daily_series("AAPL".to_string(), OutputSize::Compact);
+    // multiple requests can be added
+    site.daily_series("AAPL".to_string(), OutputSize::Compact);
 
-    let client = MarketClient::new(site);
+    // create the MarketClient
+    let mut client = MarketClient::new(site);
 
-    // Creates the query URL & download the raw data
-    let client = client.create_endpoint()?.get_data()?;
+    // creates the query URL & download the raw data
+    client = client.create_endpoint()?.get_data()?;
+    // transform into MarketSeries, that can be used for further processing
+    let data = client.transform_data();
 
-    // you can write the downloaded data to anything that implements std::io::Write , in this case a file
-    // let buffer = File::create("raw_alphavantage_json.txt")?;
-    // client.to_writer(buffer)?;
+    // print the data
+    data.iter().for_each(|output| match output {
+        Ok(data) => println!("{}\n\n", data),
+        Err(err) => println!("{}", err),
+    });
 
-    // or transform into MarketSeries struct for further processing
-    let data = client.transform_data()?;
+    // you can reuse the client to download additional series
+    // client.site.intraday_series( "MSFT".to_string(), OutputSize::Compact, AlphaInterval::Min30,);
+    client
+        .site
+        .weekly_series("MSFT".to_string(), OutputSize::Compact);
 
-    // println!("{}", data);
+    // pattern with consuming the client, the client can't be reused for configuring new series
+    let data2 = client.create_endpoint()?.get_data()?.transform_data();
 
-    // the data can be enhanced with the calculation of a series of indicators
-    let enhanced_data = data
-        .enhance_data()
-        .with_sma(10)
-        .with_ema(20)
-        .with_ema(6)
-        .with_rsi(14)
-        .calculate();
+    // the data can be enhanced with the calculation of a number of  market indicators
+    let enhanced_data: Vec<EnhancedMarketSeries> = data2
+        .into_iter()
+        .filter_map(|series| series.ok())
+        .map(|series| {
+            series
+                .enhance_data()
+                .with_sma(10)
+                .with_ema(20)
+                .with_ema(6)
+                .with_rsi(14)
+                .calculate()
+        })
+        .collect();
 
-    println!("{}", enhanced_data);
+    enhanced_data
+        .into_iter()
+        .for_each(|enhanced_series| println!("{}", enhanced_series));
 
     Ok(())
 }

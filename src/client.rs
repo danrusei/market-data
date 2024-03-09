@@ -4,7 +4,6 @@ use crate::{
     errors::MarketResult,
     indicators::{EnhancedMarketSeries, EnhancedSeries},
     publishers::Publisher,
-    MarketError,
 };
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -12,47 +11,43 @@ use std::fmt;
 
 /// MarketClient holds the Publisher
 pub struct MarketClient<T: Publisher> {
-    inner: T,
+    pub site: T,
 }
 
 impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
-        MarketClient { inner: site }
+        MarketClient { site }
     }
 
     /// Creates the final query URL for the selected Provider
     pub fn create_endpoint(mut self) -> MarketResult<Self> {
-        self.inner.create_endpoint()?;
+        self.site.create_endpoint()?;
         Ok(self)
     }
 
     /// Download the data series in the Provider format
     #[cfg(feature = "use-async")]
     pub async fn get_data(mut self) -> MarketResult<Self> {
-        self.inner.get_data().await?;
+        self.site.get_data().await?;
         Ok(self)
     }
 
     /// Download the data series in the Provider format
     #[cfg(feature = "use-sync")]
     pub fn get_data(mut self) -> MarketResult<Self> {
-        self.inner.get_data()?;
+        self.site.get_data()?;
         Ok(self)
     }
 
     /// Write the downloaded data to anything that implements std::io::Write , like File, TcpStream, Stdout, etc
     pub fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        self.inner.to_writer(writer)?;
+        self.site.to_writer(writer)?;
         Ok(())
     }
 
     /// Transform the downloaded Provider series into MarketSeries format
-    pub fn transform_data(&self) -> MarketResult<MarketSeries> {
-        let data = self.inner.transform_data().map_err(|err| {
-            MarketError::DownloadedData(format!("Unable to transform the data: {}", err))
-        })?;
-
-        Ok(data)
+    pub fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
+        self.site.transform_data()
     }
 }
 
@@ -60,6 +55,7 @@ impl<T: Publisher> MarketClient<T> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MarketSeries {
     pub symbol: String,
+    pub interval: String,
     pub data: Vec<Series>,
 }
 
@@ -101,8 +97,9 @@ impl fmt::Display for MarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "MarketSeries: Symbol={}, Series=\n{}",
+            "MarketSeries: Symbol = {}, Interval = {}, Series =\n{}",
             self.symbol,
+            self.interval,
             self.data
                 .iter()
                 .map(|series| format!("  {}", series))

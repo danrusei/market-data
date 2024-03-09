@@ -12,5 +12,5 @@ pub trait Publisher {
     #[cfg(feature = "use-sync")]
     fn get_data(&mut self) -> MarketResult<()>;
     fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()>;
-    fn transform_data(&self) -> MarketResult<MarketSeries>;
+    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>>;
 }

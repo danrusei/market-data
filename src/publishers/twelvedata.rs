@@ -1,9 +1,4 @@
 //! Fetch time series stock data from [Twelvedata](https://twelvedata.com/docs#time-series)
-//
-/// Claim your API Key (Basic Free Account with 800 API credits per day)
-/// https://twelvedata.com/pricing
-/// https://support.twelvedata.com/en/articles/5615854-credits
-/// For instance, if you access /time_series data for AAPL, MSFT, and TSLA - you would consume a total of (1 credit) * (3 symbols) = 3 credits.
 ///
 /// Example Daily requests:
 /// https://api.twelvedata.com/time_series?symbol=AAPL&interval=1day&outputsize=50&apikey=your_api_key
@@ -31,142 +26,167 @@ const BASE_URL: &str = "https://api.twelvedata.com/time_series";
 #[derive(Debug, Default)]
 pub struct Twelvedata {
     token: String,
+    requests: Vec<TDRequest>,
+    endpoints: Vec<url::Url>,
+    data: Vec<TwelvedataPrices>,
+}
+
+#[derive(Debug, Default)]
+pub struct TDRequest {
     symbol: String,
-    interval: String,
+    interval: TwelveInterval,
     output_size: u32,
-    endpoint: Option<url::Url>,
-    data: Option<TwelvedataDailyPrices>,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub enum TwelveInterval {
+    Min1,
+    Min5,
+    Min15,
+    Min30,
+    Min45,
+    Hour1,
+    Hour2,
+    Hour4,
+    #[default]
+    Daily,
+    Weekly,
+    Monthly,
 }
 
 impl Twelvedata {
+    /// create new instance of Twelvedata
     pub fn new(token: String) -> Self {
         Twelvedata {
             token: token,
             ..Default::default()
         }
     }
-    pub fn for_daily_series(&mut self, symbol: String, output_size: u32) -> () {
-        self.symbol = symbol;
-        self.interval = "1day".to_string();
-        self.output_size = output_size;
+
+    /// Request for intraday series
+    pub fn intraday_series(
+        &mut self,
+        symbol: String,
+        output_size: u32,
+        interval: TwelveInterval,
+    ) -> () {
+        self.requests.push(TDRequest {
+            symbol,
+            interval,
+            output_size,
+        })
     }
-    pub fn for_intraday_series(&mut self, _symbol: String) -> () {
-        todo!("not supported yet")
+
+    /// Request for daily series
+    pub fn daily_series(&mut self, symbol: String, output_size: u32) -> () {
+        let interval = TwelveInterval::Daily;
+        self.requests.push(TDRequest {
+            symbol,
+            interval,
+            output_size,
+        });
     }
-    pub fn for_weekly_series(&mut self, _symbol: String) -> () {
-        todo!("not supported yet")
+
+    /// Request for weekly series
+    pub fn weekly_series(&mut self, symbol: String, output_size: u32) -> () {
+        let interval = TwelveInterval::Weekly;
+        self.requests.push(TDRequest {
+            symbol,
+            interval,
+            output_size,
+        });
+    }
+
+    /// Request for monthly series
+    pub fn monthly_series(&mut self, symbol: String, output_size: u32) -> () {
+        let interval = TwelveInterval::Monthly;
+        self.requests.push(TDRequest {
+            symbol,
+            interval,
+            output_size,
+        });
     }
 }
 
 impl Publisher for Twelvedata {
     fn create_endpoint(&mut self) -> MarketResult<()> {
         let base_url = Url::parse(BASE_URL)?;
-        let constructed_url = base_url.join(&format!(
-            "?symbol={}&interval={}&outputsize={}&format=json&apikey={}",
-            self.symbol, self.interval, self.output_size, self.token
-        ))?;
-        self.endpoint = Some(constructed_url);
+        self.endpoints = self
+            .requests
+            .iter()
+            .map(|request| {
+                let constructed_url = base_url
+                    .join(&format!(
+                        "?symbol={}&interval={}&outputsize={}&format=json&apikey={}",
+                        request.symbol,
+                        request.interval.to_string(),
+                        request.output_size,
+                        self.token
+                    ))
+                    .unwrap();
+                constructed_url
+            })
+            .collect();
+        // self.requests have to be consumed once used for creating the endpoints
+        self.requests.clear();
         Ok(())
     }
 
     #[cfg(feature = "use-sync")]
     fn get_data(&mut self) -> MarketResult<()> {
-        let rest_client = Client::new(
-            self.endpoint
-                .clone()
-                .expect("Use create_endpoint method first to construct the URL"),
-        );
-        let response = rest_client.get_data()?;
-        let body = response.into_string()?;
+        let rest_client = Client::new();
+        for endpoint in &self.endpoints {
+            let response = rest_client.get_data(endpoint)?;
+            let body = response.into_string()?;
 
-        let prices: TwelvedataDailyPrices = serde_json::from_str(&body)?;
-        self.data = Some(prices);
+            let prices: TwelvedataPrices = serde_json::from_str(&body)?;
+            self.data.push(prices);
+        }
+        // self.endpoints have to be consumed once the data was downloaded for requested URL
+        self.endpoints.clear();
 
         Ok(())
     }
 
     #[cfg(feature = "use-async")]
     async fn get_data(&mut self) -> MarketResult<()> {
-        let client = Client::new(
-            self.endpoint
-                .clone()
-                .expect("Use create_endpoint method first to construct the URL"),
-        );
-        let response = client.get_data().await?;
-        let body = response.text().await?;
+        let client = Client::new();
+        for endpoint in &self.endpoints {
+            let response = client.get_data(endpoint).await?;
+            let body = response.text().await?;
 
-        let prices: TwelvedataDailyPrices = serde_json::from_str(&body)?;
-        self.data = Some(prices);
+            let prices: TwelvedataPrices = serde_json::from_str(&body)?;
+            self.data.push(prices);
+        }
+
+        // self.endpoints have to be consumed once the data was downloaded for requested URL
+        self.endpoints.clear();
 
         Ok(())
     }
 
     fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        if let Some(data) = &self.data {
-            serde_json::to_writer(writer, data).map_err(|err| {
-                MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
-            })?;
-        }
+        serde_json::to_writer(writer, &self.data).map_err(|err| {
+            MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
+        })?;
         Ok(())
     }
 
-    fn transform_data(&self) -> MarketResult<MarketSeries> {
-        if let Some(data) = self.data.as_ref() {
-            if data.status != "ok".to_string() {
-                return Err(MarketError::DownloadedData(format!(
-                    "Downloaded data status is: {}",
-                    data.status
-                )));
-            }
-            let mut data_series: Vec<Series> = Vec::with_capacity(data.time_series.len());
-            for series in data.time_series.iter() {
-                let open: f32 = series.open.trim().parse().map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse Open field: {}", e))
-                })?;
-                let close: f32 = series.close.trim().parse().map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse Close field: {}", e))
-                })?;
-                let high: f32 = series.high.trim().parse().map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse High field: {}", e))
-                })?;
-                let low: f32 = series.low.trim().parse().map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse Low field: {}", e))
-                })?;
-                let volume: f32 = series.volume.trim().parse().map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
-                })?;
-                let date: NaiveDate = NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d")
-                    .map_err(|e| {
-                        MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
-                    })?;
-
-                data_series.push(Series {
-                    date: date,
-                    open: open,
-                    close: close,
-                    high: high,
-                    low: low,
-                    volume: volume,
-                })
-            }
-
-            // sort the series by date
-            data_series.sort_by_key(|item| item.date);
-
-            Ok(MarketSeries {
-                symbol: self.symbol.clone(),
-                data: data_series,
-            })
-        } else {
-            Err(MarketError::DownloadedData(
-                "No data downloaded".to_string(),
-            ))
+    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
+        let mut result = Vec::new();
+        for data in self.data.iter() {
+            let parsed_data = transform(data);
+            result.push(parsed_data)
         }
+
+        // self.data have to be consumed once the data is transformed to MarketSeries
+        self.data.clear();
+        result
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct TwelvedataDailyPrices {
+struct TwelvedataPrices {
     #[allow(dead_code)]
     meta: MetaData,
     #[serde(rename(deserialize = "values"))]
@@ -176,9 +196,7 @@ struct TwelvedataDailyPrices {
 
 #[derive(Debug, Deserialize, Serialize)]
 struct MetaData {
-    #[allow(dead_code)]
     symbol: String,
-    #[allow(dead_code)]
     interval: String,
     #[allow(dead_code)]
     currency: String,
@@ -200,4 +218,82 @@ struct TimeSeriesData {
     low: String,
     close: String,
     volume: String,
+}
+
+fn transform(data: &TwelvedataPrices) -> MarketResult<MarketSeries> {
+    // validate the data, first check is status
+    if data.status != "ok".to_string() {
+        return Err(MarketError::DownloadedData(format!(
+            "Downloaded data status is: {}",
+            data.status
+        )));
+    }
+
+    let mut data_series: Vec<Series> = Vec::with_capacity(data.time_series.len());
+
+    for series in data.time_series.iter() {
+        let open: f32 =
+            series.open.trim().parse().map_err(|e| {
+                MarketError::ParsingError(format!("Unable to parse Open field: {}", e))
+            })?;
+        let close: f32 = series.close.trim().parse().map_err(|e| {
+            MarketError::ParsingError(format!("Unable to parse Close field: {}", e))
+        })?;
+        let high: f32 =
+            series.high.trim().parse().map_err(|e| {
+                MarketError::ParsingError(format!("Unable to parse High field: {}", e))
+            })?;
+        let low: f32 =
+            series.low.trim().parse().map_err(|e| {
+                MarketError::ParsingError(format!("Unable to parse Low field: {}", e))
+            })?;
+        let volume: f32 = series.volume.trim().parse().map_err(|e| {
+            MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+        })?;
+        let date = match data.meta.interval.as_str() {
+            "1day" | "1week" | "1month" => NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d")
+                .map_err(|e| {
+                    MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+                })?,
+            _ => NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(|e| {
+                MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
+            })?,
+        };
+
+        data_series.push(Series {
+            date,
+            open,
+            close,
+            high,
+            low,
+            volume,
+        })
+    }
+
+    // sort the series by date
+    data_series.sort_by_key(|item| item.date);
+
+    Ok(MarketSeries {
+        symbol: data.meta.symbol.clone(),
+        interval: data.meta.interval.clone(),
+        data: data_series,
+    })
+}
+
+impl ToString for TwelveInterval {
+    fn to_string(&self) -> String {
+        match self {
+            TwelveInterval::Min1 => String::from("1min"),
+            TwelveInterval::Min5 => String::from("5min"),
+            TwelveInterval::Min15 => String::from("15min"),
+            TwelveInterval::Min30 => String::from("30min"),
+            TwelveInterval::Min45 => String::from("45min"),
+            TwelveInterval::Hour1 => String::from("1h"),
+            TwelveInterval::Hour2 => String::from("2h"),
+            TwelveInterval::Hour4 => String::from("4h"),
+            TwelveInterval::Daily => String::from("1day"),
+            TwelveInterval::Weekly => String::from("1week"),
+            TwelveInterval::Monthly => String::from("1month"),
+        }
+    }
 }

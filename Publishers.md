@@ -73,6 +73,27 @@ site.intraday_series("MSFT".to_string(), OutputSize::Compact, Interval::Min60); 
 
 Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_alphavantage.rs)
 
-## [IEX Cloud](https://iexcloud.io/docs/api/#historical-prices)
+## [IEX Cloud](https://iexcloud.io/docs/api/#historical-prices) 
 
-TODO
+Their API and the subscription model has changed, therefeore the below examples may not work without a paid subscribtion !
+
+Select Iex Cloud publisher:
+
+```rust
+let mut site = Iex::new(TOKEN.to_string());
+```
+
+For the requested instrument select the time series. Multiple can be added. 
+The available methods:
+
+* *daily_series (symbol: String, range: String)*
+
+Example:
+
+```rust
+site.daily_series("AAPL".to_string(), "3m".to_string());
+```
+
+**range** - supported values : 1m (default), 3m, 6m, ytd, 1y, 2y, 5y, max (available data up to 15 years)
+
+Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_iexcloud.rs)

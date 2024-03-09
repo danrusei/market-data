@@ -2,7 +2,7 @@
 
 A Rust lib to fetch & enhance historical time-series stock market data.
 
-For fetching the data a Sync version can be used with [ureq](https://crates.io/crates/ureq) http client, or the Async version using [reqwest](https://crates.io/crates/reqwest) http client.
+The Sync version using the [ureq](https://crates.io/crates/ureq) http client is the default. An Async version using [reqwest](https://crates.io/crates/reqwest) http client can be selected by enabling the "use-async" feature.
 
 To enable async feature:
 
@@ -77,7 +77,7 @@ So far the following are supported.
 
 * [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)
-* [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to)
+* [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to) - may not work unless you use the paid subscribtions
 
 Alternative providers, to be added:
 

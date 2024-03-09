@@ -59,7 +59,6 @@ pub enum AlphaInterval {
 #[derive(Debug, Default, PartialEq)]
 pub enum Function {
     // https://www.alphavantage.co/documentation/#intraday
-    #[allow(dead_code)]
     TimeSeriesIntraday,
     // https://www.alphavantage.co/documentation/#daily
     #[default]

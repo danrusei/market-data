@@ -34,12 +34,12 @@ pub struct Twelvedata {
 #[derive(Debug, Default)]
 pub struct TDRequest {
     symbol: String,
-    interval: Interval,
+    interval: TwelveInterval,
     output_size: u32,
 }
 
 #[derive(Debug, Default, PartialEq)]
-pub enum Interval {
+pub enum TwelveInterval {
     Min1,
     Min5,
     Min15,
@@ -64,7 +64,12 @@ impl Twelvedata {
     }
 
     /// Request for intraday series
-    pub fn intraday_series(&mut self, symbol: String, output_size: u32, interval: Interval) -> () {
+    pub fn intraday_series(
+        &mut self,
+        symbol: String,
+        output_size: u32,
+        interval: TwelveInterval,
+    ) -> () {
         self.requests.push(TDRequest {
             symbol,
             interval,
@@ -74,7 +79,7 @@ impl Twelvedata {
 
     /// Request for daily series
     pub fn daily_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = Interval::Daily;
+        let interval = TwelveInterval::Daily;
         self.requests.push(TDRequest {
             symbol,
             interval,
@@ -84,7 +89,7 @@ impl Twelvedata {
 
     /// Request for weekly series
     pub fn weekly_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = Interval::Weekly;
+        let interval = TwelveInterval::Weekly;
         self.requests.push(TDRequest {
             symbol,
             interval,
@@ -94,7 +99,7 @@ impl Twelvedata {
 
     /// Request for monthly series
     pub fn monthly_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = Interval::Monthly;
+        let interval = TwelveInterval::Monthly;
         self.requests.push(TDRequest {
             symbol,
             interval,
@@ -145,16 +150,12 @@ impl Publisher for Twelvedata {
 
     #[cfg(feature = "use-async")]
     async fn get_data(&mut self) -> MarketResult<()> {
-        let client = Client::new(
-            self.endpoint
-                .clone()
-                .expect("Use create_endpoint method first to construct the URL"),
-        );
+        let client = Client::new();
         for endpoint in &self.endpoints {
-            let response = client.get_data().await?;
+            let response = client.get_data(endpoint).await?;
             let body = response.text().await?;
 
-            let prices: TwelvedataDailyPrices = serde_json::from_str(&body)?;
+            let prices: TwelvedataPrices = serde_json::from_str(&body)?;
             self.data.push(prices);
         }
 
@@ -279,20 +280,20 @@ fn transform(data: &TwelvedataPrices) -> MarketResult<MarketSeries> {
     })
 }
 
-impl ToString for Interval {
+impl ToString for TwelveInterval {
     fn to_string(&self) -> String {
         match self {
-            Interval::Min1 => String::from("1min"),
-            Interval::Min5 => String::from("5min"),
-            Interval::Min15 => String::from("15min"),
-            Interval::Min30 => String::from("30min"),
-            Interval::Min45 => String::from("45min"),
-            Interval::Hour1 => String::from("1h"),
-            Interval::Hour2 => String::from("2h"),
-            Interval::Hour4 => String::from("4h"),
-            Interval::Daily => String::from("1day"),
-            Interval::Weekly => String::from("1week"),
-            Interval::Monthly => String::from("1month"),
+            TwelveInterval::Min1 => String::from("1min"),
+            TwelveInterval::Min5 => String::from("5min"),
+            TwelveInterval::Min15 => String::from("15min"),
+            TwelveInterval::Min30 => String::from("30min"),
+            TwelveInterval::Min45 => String::from("45min"),
+            TwelveInterval::Hour1 => String::from("1h"),
+            TwelveInterval::Hour2 => String::from("2h"),
+            TwelveInterval::Hour4 => String::from("4h"),
+            TwelveInterval::Daily => String::from("1day"),
+            TwelveInterval::Weekly => String::from("1week"),
+            TwelveInterval::Monthly => String::from("1month"),
         }
     }
 }

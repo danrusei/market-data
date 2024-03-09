@@ -25,11 +25,11 @@ impl Client {
         }
     }
     #[cfg(feature = "use-async")]
-    pub(crate) async fn get_data(&self) -> MarketResult<Response> {
+    pub(crate) async fn get_data(&self, endpoint: &url::Url) -> MarketResult<Response> {
         let client = &self.inner_client;
 
         // Make an Asynchronous GET request
-        let response = client.get(self.host.clone()).send().await?;
+        let response = client.get(endpoint.clone()).send().await?;
 
         // Check if the request was successful, else send to user as Error
         let status_code = response.status();

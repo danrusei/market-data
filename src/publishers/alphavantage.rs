@@ -220,13 +220,9 @@ impl Publisher for AlphaVantage {
 
     #[cfg(feature = "use-async")]
     async fn get_data(&mut self) -> MarketResult<()> {
-        let client = Client::new(
-            self.endpoint
-                .clone()
-                .expect("Use create_endpoint method first to construct the URL"),
-        );
-        for endpoint in &self.endpoints {
-            let response = client.get_data().await?;
+        let client = Client::new();
+        for (i, endpoint) in self.endpoints.iter().enumerate() {
+            let response = client.get_data(endpoint).await?;
             let body = response.text().await?;
 
             match self.requests[i].function {

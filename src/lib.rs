@@ -17,7 +17,7 @@ mod publishers;
 pub use publishers::{
     alphavantage::{AlphaInterval, AlphaVantage, OutputSize},
     iexcloud::Iex,
-    twelvedata::{Interval, Twelvedata},
+    twelvedata::{TwelveInterval, Twelvedata},
 };
 
 mod indicators;

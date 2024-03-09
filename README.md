@@ -72,8 +72,7 @@ Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/ex
 
 ## Supported Publishers
 
-Selected a number of sites that offer Free Tier, new Publishers can be added, your contribution is welcome.
-So far the following are supported.
+Implementation is available for a number of sites that offer Free Tier. New Publishers can be added, your contribution is welcome.  Additional details can be found in [Publishers.md](https://github.com/danrusei/market-data/blob/main/Publishers.md) file. So far the following are supported:
 
 * [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)

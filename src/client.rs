@@ -1,10 +1,6 @@
 //! Market-Data client implementation
 
-use crate::{
-    errors::MarketResult,
-    indicators::{EnhancedMarketSeries, EnhancedSeries},
-    publishers::Publisher,
-};
+use crate::{errors::MarketResult, indicators::EnhancedMarketSeries, publishers::Publisher};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -71,24 +67,11 @@ pub struct Series {
 }
 
 impl MarketSeries {
-    pub fn enhance_data(&self) -> EnhancedMarketSeries {
-        let enhanced_series: Vec<EnhancedSeries> = self
-            .data
-            .iter()
-            .map(|item| EnhancedSeries {
-                date: item.date,
-                open: item.open,
-                close: item.close,
-                high: item.high,
-                low: item.low,
-                volume: item.volume,
-                ..Default::default()
-            })
-            .collect();
+    pub fn enhance_data(self) -> EnhancedMarketSeries {
         EnhancedMarketSeries {
-            symbol: self.symbol.clone(),
-            indicators: Vec::new(),
-            data: enhanced_series,
+            series: self,
+            asks: Vec::new(),
+            indicators: Default::default(),
         }
     }
 }

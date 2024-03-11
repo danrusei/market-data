@@ -69,7 +69,6 @@ impl EnhancedMarketSeries {
 
         for (ask, ind) in result.into_iter() {
             match ask {
-                // Assuming the order in self.indicators matches the order in result
                 Ask::SMA(value) => {
                     self.indicators.sma.insert(format!("SMA {}", value), ind);
                 }

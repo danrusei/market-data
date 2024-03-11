@@ -96,22 +96,6 @@ impl fmt::Display for Ask {
     }
 }
 
-// impl fmt::Display for EnhancedMarketSeries {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(
-//             f,
-//             "Symbol: {}, Requested Indicators: {:?}, Data: [\n{}\n]",
-//             self.symbol,
-//             self.asks,
-//             self.series
-//                 .iter()
-//                 .map(|series| format!("{}", series))
-//                 .collect::<Vec<_>>()
-//                 .join(",\n")
-//         )
-//     }
-// }
-
 impl fmt::Display for EnhancedMarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(

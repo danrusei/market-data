@@ -16,8 +16,8 @@ fn main() -> Result<()> {
     // configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
     // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
     // multiple requests can be added
-    site.weekly_series("GOOGL".to_string(), 40);
-    site.daily_series("GOOGL".to_string(), 30);
+    // site.weekly_series("GOOGL".to_string(), 40);
+    site.daily_series("GOOGL".to_string(), 300);
 
     // create the MarketClient
     let mut client = MarketClient::new(site);
@@ -28,21 +28,21 @@ fn main() -> Result<()> {
     let data = client.transform_data();
 
     // print the data
-    data.iter().for_each(|output| match output {
-        Ok(data) => println!("{}\n\n", data),
-        Err(err) => println!("{}", err),
-    });
+    // data.iter().for_each(|output| match output {
+    //     Ok(data) => println!("{}\n\n", data),
+    //     Err(err) => println!("{}", err),
+    // });
 
     // you can reuse the client to download additional series
-    client
-        .site
-        .intraday_series("MSFT".to_string(), 200, Interval::Hour2)?;
+    // client
+    //     .site
+    //     .intraday_series("MSFT".to_string(), 200, Interval::Hour2)?;
 
     // pattern with consuming the client, the client can't be reused for configuring new series
-    let data2 = client.create_endpoint()?.get_data()?.transform_data();
+    // let data2 = client.create_endpoint()?.get_data()?.transform_data();
 
     // the data can be enhanced with the calculation of a number of  market indicators
-    let enhanced_data: Vec<EnhancedMarketSeries> = data2
+    let enhanced_data: Vec<EnhancedMarketSeries> = data
         .into_iter()
         .filter_map(|series| series.ok())
         .map(|series| {

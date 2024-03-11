@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    client::{MarketSeries, Series},
+    client::{Interval, MarketSeries, Series},
     errors::{MarketError, MarketResult},
     publishers::Publisher,
     rest_call::Client,
@@ -35,16 +35,19 @@ pub struct IexRequest {
 }
 
 impl Iex {
-    pub fn new(token: String) -> Self {
+    pub fn new(token: impl Into<String>) -> Self {
         Iex {
-            token: token,
+            token: token.into(),
             ..Default::default()
         }
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: String, range: String) -> () {
-        self.requests.push(IexRequest { symbol, range });
+    pub fn daily_series(&mut self, symbol: impl Into<String>, range: impl Into<String>) -> () {
+        self.requests.push(IexRequest {
+            symbol: symbol.into(),
+            range: range.into(),
+        });
     }
 }
 
@@ -146,7 +149,7 @@ impl Publisher for Iex {
 
             result.push(Ok(MarketSeries {
                 symbol: symbol.clone(),
-                interval: "Daily".to_string(),
+                interval: Interval::Daily,
                 data: data_series,
             }))
         }

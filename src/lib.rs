@@ -11,17 +11,17 @@
 //! Check the [Readme file](https://github.com/danrusei/market-data) and the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for more information.
 
 mod client;
-pub use client::{MarketClient, MarketSeries, Series};
+pub use client::{Interval, MarketClient, MarketSeries, Series};
 
 mod publishers;
 pub use publishers::{
-    alphavantage::{AlphaInterval, AlphaVantage, OutputSize},
+    alphavantage::{AlphaVantage, OutputSize},
     iexcloud::Iex,
-    twelvedata::{TwelveInterval, Twelvedata},
+    twelvedata::Twelvedata,
 };
 
 mod indicators;
-pub use indicators::{EnhancedMarketSeries, EnhancedSeries};
+pub use indicators::EnhancedMarketSeries;
 
 pub mod errors;
 pub use errors::MarketError;

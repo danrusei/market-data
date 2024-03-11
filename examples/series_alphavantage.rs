@@ -11,12 +11,12 @@ lazy_static! {
 
 fn main() -> Result<()> {
     // Select a Alpha Vantage as publisher
-    let mut site = AlphaVantage::new(TOKEN.to_string());
+    let mut site = AlphaVantage::new(TOKEN);
 
     // OutputSize::Compact - returns only the latest 100 data points
     // OutputSize::Full - returns the full-length time series of 20+ years of historical data
     // multiple requests can be added
-    site.daily_series("AAPL".to_string(), OutputSize::Compact);
+    site.daily_series("AAPL", OutputSize::Compact);
 
     // create the MarketClient
     let mut client = MarketClient::new(site);
@@ -33,10 +33,8 @@ fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
-    // client.site.intraday_series( "MSFT".to_string(), OutputSize::Compact, AlphaInterval::Min30,);
-    client
-        .site
-        .weekly_series("MSFT".to_string(), OutputSize::Compact);
+    // client.site.intraday_series( "MSFT".to_string(), OutputSize::Compact, Interval::Min30,);
+    client.site.weekly_series("MSFT", OutputSize::Compact);
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data()?.transform_data();

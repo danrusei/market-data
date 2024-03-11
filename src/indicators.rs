@@ -1,6 +1,5 @@
 use crate::indicators::{ema::calculate_ema, rsi::calculate_rsi, sma::calculate_sma};
-use crate::MarketSeries;
-use chrono::NaiveDate;
+use crate::{Interval, Series};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
@@ -12,7 +11,9 @@ pub(crate) mod sma;
 /// Holds the MarketSeries + the calculation for the supported indicators
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EnhancedMarketSeries {
-    pub series: MarketSeries,
+    pub symbol: String,
+    pub interval: Interval,
+    pub series: Vec<Series>,
     pub asks: Vec<Ask>,
     pub indicators: Indicators,
 }
@@ -60,9 +61,9 @@ impl EnhancedMarketSeries {
             .indicators
             .iter()
             .map(|ind| match ind {
-                Ask::SMA(period) => calculate_sma(&self.data, period.clone()),
-                Ask::EMA(period) => calculate_ema(&self.data, period.clone()),
-                Ask::RSI(period) => calculate_rsi(&self.data, period.clone()),
+                Ask::SMA(period) => calculate_sma(&self.series, period.clone()),
+                Ask::EMA(period) => calculate_ema(&self.series, period.clone()),
+                Ask::RSI(period) => calculate_rsi(&self.series, period.clone()),
             })
             .collect();
 

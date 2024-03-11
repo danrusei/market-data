@@ -4,6 +4,7 @@ use crate::{errors::MarketResult, indicators::EnhancedMarketSeries, publishers::
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::str::FromStr;
 
 /// MarketClient holds the Publisher
 pub struct MarketClient<T: Publisher> {
@@ -51,7 +52,7 @@ impl<T: Publisher> MarketClient<T> {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MarketSeries {
     pub symbol: String,
-    pub interval: String,
+    pub interval: Interval,
     pub data: Vec<Series>,
 }
 
@@ -66,10 +67,27 @@ pub struct Series {
     pub volume: f32,
 }
 
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub enum Interval {
+    Min1,
+    Min5,
+    Min15,
+    Min30,
+    Hour1,
+    Hour2,
+    Hour4,
+    #[default]
+    Daily,
+    Weekly,
+    Monthly,
+}
+
 impl MarketSeries {
     pub fn enhance_data(self) -> EnhancedMarketSeries {
         EnhancedMarketSeries {
-            series: self,
+            symbol: self.symbol,
+            interval: self.interval,
+            series: self.data,
             asks: Vec::new(),
             indicators: Default::default(),
         }
@@ -99,5 +117,53 @@ impl fmt::Display for Series {
             "Date: {}, Open: {}, Close: {}, High: {}, Low: {}, Volume: {}",
             self.date, self.open, self.close, self.high, self.low, self.volume
         )
+    }
+}
+
+impl fmt::Display for Interval {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let interval_str = match self {
+            Interval::Min1 => "1 minute",
+            Interval::Min5 => "5 minutes",
+            Interval::Min15 => "15 minutes",
+            Interval::Min30 => "30 minutes",
+            Interval::Hour1 => "1 hour",
+            Interval::Hour2 => "2 hours",
+            Interval::Hour4 => "4 hours",
+            Interval::Daily => "Daily",
+            Interval::Weekly => "Weekly",
+            Interval::Monthly => "Monthly",
+        };
+
+        write!(f, "{}", interval_str)
+    }
+}
+
+/// AlphaVantage response interval: 1min, 5min, 15min, 30min, 60min,
+/// Twelvedata response interval: 1min, 5min, 15min, 30min, 1h, 2h, 4h, 1day, 1week, 1month
+impl std::str::FromStr for Interval {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "1min" => Ok(Interval::Min1),
+            "5min" => Ok(Interval::Min5),
+            "15min" => Ok(Interval::Min15),
+            "30min" => Ok(Interval::Min30),
+            "60min" => Ok(Interval::Hour1),
+            "1h" => Ok(Interval::Hour1),
+            "2h" => Ok(Interval::Hour2),
+            "4h" => Ok(Interval::Hour4),
+            "1day" => Ok(Interval::Daily),
+            "1week" => Ok(Interval::Weekly),
+            "1month" => Ok(Interval::Monthly),
+            _ => Err("Invalid interval string"),
+        }
+    }
+}
+
+impl From<String> for Interval {
+    fn from(s: String) -> Self {
+        Interval::from_str(&s).unwrap_or_else(|_| Interval::Daily)
     }
 }

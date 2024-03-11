@@ -10,9 +10,9 @@ lazy_static! {
 
 fn main() -> Result<()> {
     // Select Iex Publisher:
-    let mut site = Iex::new(TOKEN.to_string());
-    site.daily_series("AAPL".to_string(), "3m".to_string());
-    site.daily_series("MSFT".to_string(), "3m".to_string());
+    let mut site = Iex::new(TOKEN);
+    site.daily_series("AAPL", "3m");
+    site.daily_series("MSFT", "3m");
 
     // create the MarketClient
     let mut client = MarketClient::new(site);

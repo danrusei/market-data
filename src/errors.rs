@@ -30,4 +30,7 @@ pub enum MarketError {
 
     #[error("Unable to write to: {0}")]
     ToWriter(String),
+
+    #[error("Unsuported Interval for selected publisher: {0}")]
+    UnsuportedInterval(String),
 }

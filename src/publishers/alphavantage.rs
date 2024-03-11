@@ -164,7 +164,7 @@ impl Publisher for AlphaVantage {
                             "query?function={}&symbol={}&interval={}&outputsize={}&datatype=json&apikey={}",
                             request.function.to_string(),
                             request.symbol,
-                            request.interval.unwrap(),
+                            request.interval.as_ref().unwrap(),
                             request.output_size.to_string(),
                             self.token
                         ))
@@ -283,7 +283,7 @@ impl Publisher for AlphaVantage {
 
             result.push(Ok(MarketSeries {
                 symbol: intra_data.meta_data.symbol.clone(),
-                interval: intra_data.meta_data.interval.into(),
+                interval: intra_data.meta_data.interval.clone().into(),
                 data: market_series,
             }))
         }

@@ -61,8 +61,8 @@ impl Twelvedata {
             Interval::Min15 => "15min".to_string(),
             Interval::Min30 => "30min".to_string(),
             Interval::Hour1 => "1h".to_string(),
-            Interval::Hour1 => "2h".to_string(),
-            Interval::Hour1 => "4h".to_string(),
+            Interval::Hour2 => "2h".to_string(),
+            Interval::Hour4 => "4h".to_string(),
             _ => Err(MarketError::UnsuportedInterval(format!(
                 "{} interval is not supported by AlphaVantage",
                 interval
@@ -268,7 +268,7 @@ fn transform(data: &TwelvedataPrices) -> MarketResult<MarketSeries> {
 
     Ok(MarketSeries {
         symbol: data.meta.symbol.clone(),
-        interval: data.meta.interval.into(),
+        interval: data.meta.interval.clone().into(),
         data: data_series,
     })
 }

@@ -1,9 +1,9 @@
-use crate::Series;
+use crate::{indicators::Ask, Series};
 use std::collections::VecDeque;
 
 // calculated based on:
 // https://www.investopedia.com/ask/answers/122314/what-exponential-moving-average-ema-formula-and-how-ema-calculated.asp
-pub(crate) fn calculate_ema(series: &[Series], period: usize) -> VecDeque<f32> {
+pub(crate) fn calculate_ema(series: &[Series], period: usize) -> (Ask, VecDeque<f32>) {
     let alpha = 2.0 / (period as f32 + 1.0);
     let mut ema_values: VecDeque<f32> = VecDeque::with_capacity(series.len());
     let mut ema_prev: Option<f32> = None;
@@ -25,5 +25,5 @@ pub(crate) fn calculate_ema(series: &[Series], period: usize) -> VecDeque<f32> {
 
     assert!(ema_values.len() == series.len());
 
-    ema_values
+    (Ask::SMA(period), ema_values)
 }

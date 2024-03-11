@@ -1,7 +1,7 @@
 use crate::indicators::{ema::calculate_ema, rsi::calculate_rsi, sma::calculate_sma};
 use crate::{Interval, Series};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
 pub(crate) mod ema;
@@ -29,11 +29,11 @@ pub enum Ask {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Indicators {
     // Simple Moving Average
-    pub sma: BTreeMap<String, f32>,
+    pub sma: HashMap<String, VecDeque<f32>>,
     // Exponential Moving Average
-    pub ema: BTreeMap<String, f32>,
+    pub ema: HashMap<String, VecDeque<f32>>,
     // Relative Strength Index
-    pub rsi: BTreeMap<String, f32>,
+    pub rsi: HashMap<String, VecDeque<f32>>,
 }
 
 impl EnhancedMarketSeries {
@@ -57,8 +57,8 @@ impl EnhancedMarketSeries {
 
     /// Calculate the indicators and populate within the EnhancedMarketSeries struct
     pub fn calculate(mut self) -> Self {
-        let result: Vec<VecDeque<f32>> = self
-            .indicators
+        let result: Vec<(Ask, VecDeque<f32>)> = self
+            .asks
             .iter()
             .map(|ind| match ind {
                 Ask::SMA(period) => calculate_sma(&self.series, period.clone()),
@@ -67,23 +67,21 @@ impl EnhancedMarketSeries {
             })
             .collect();
 
-        // populate EnhancedMarketSeries struct
-        for (i, series) in self.data.iter_mut().enumerate() {
-            for (j, ind) in self.indicators.iter().enumerate() {
-                match ind {
-                    // Assuming the order in self.indicators matches the order in result
-                    Ask::SMA(value) => {
-                        series.sma.insert(format!("SMA {}", value), result[j][i]);
-                    }
-                    Ask::EMA(value) => {
-                        series.ema.insert(format!("EMA {}", value), result[j][i]);
-                    }
-                    Ask::RSI(value) => {
-                        series.rsi.insert(format!("RSI {}", value), result[j][i]);
-                    }
+        for (ask, ind) in result.into_iter() {
+            match ask {
+                // Assuming the order in self.indicators matches the order in result
+                Ask::SMA(value) => {
+                    self.indicators.sma.insert(format!("SMA {}", value), ind);
+                }
+                Ask::EMA(value) => {
+                    self.indicators.ema.insert(format!("EMA {}", value), ind);
+                }
+                Ask::RSI(value) => {
+                    self.indicators.rsi.insert(format!("RSI {}", value), ind);
                 }
             }
         }
+
         self
     }
 }
@@ -95,7 +93,7 @@ impl fmt::Display for EnhancedMarketSeries {
             "Symbol: {}, Indicators: {:?}, Data: [\n{}\n]",
             self.symbol,
             self.indicators,
-            self.data
+            self.series
                 .iter()
                 .map(|series| format!("{}", series))
                 .collect::<Vec<_>>()

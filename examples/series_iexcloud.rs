@@ -10,7 +10,7 @@ lazy_static! {
 
 fn main() -> Result<()> {
     // Select Iex Publisher:
-    let mut site = Iex::new(TOKEN);
+    let mut site = Iex::new(TOKEN.to_string());
     site.daily_series("AAPL", "3m");
     site.daily_series("MSFT", "3m");
 

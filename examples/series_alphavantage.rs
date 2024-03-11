@@ -11,7 +11,7 @@ lazy_static! {
 
 fn main() -> Result<()> {
     // Select a Alpha Vantage as publisher
-    let mut site = AlphaVantage::new(TOKEN);
+    let mut site = AlphaVantage::new(TOKEN.to_string());
 
     // OutputSize::Compact - returns only the latest 100 data points
     // OutputSize::Full - returns the full-length time series of 20+ years of historical data

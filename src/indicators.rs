@@ -86,22 +86,6 @@ impl EnhancedMarketSeries {
     }
 }
 
-impl fmt::Display for EnhancedMarketSeries {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Symbol: {}, Indicators: {:?}, Data: [\n{}\n]",
-            self.symbol,
-            self.indicators,
-            self.series
-                .iter()
-                .map(|series| format!("{}", series))
-                .collect::<Vec<_>>()
-                .join(",\n")
-        )
-    }
-}
-
 impl fmt::Display for Ask {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -112,26 +96,62 @@ impl fmt::Display for Ask {
     }
 }
 
-// impl fmt::Display for EnhancedSeries {
+// impl fmt::Display for EnhancedMarketSeries {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 //         write!(
 //             f,
-//             "Date: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2},",
-//             self.date, self.open, self.close, self.high, self.low, self.volume
-//         )?;
-
-//         for (key, value) in &self.sma {
-//             write!(f, " {}: {:.2},", key, value)?;
-//         }
-
-//         for (key, value) in &self.ema {
-//             write!(f, " {}: {:.2},", key, value)?;
-//         }
-
-//         for (key, value) in &self.rsi {
-//             write!(f, " {}: {:.2}", key, value)?;
-//         }
-
-//         Ok(())
+//             "Symbol: {}, Requested Indicators: {:?}, Data: [\n{}\n]",
+//             self.symbol,
+//             self.asks,
+//             self.series
+//                 .iter()
+//                 .map(|series| format!("{}", series))
+//                 .collect::<Vec<_>>()
+//                 .join(",\n")
+//         )
 //     }
 // }
+
+impl fmt::Display for EnhancedMarketSeries {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "EnhancedMarketSerie: Symbol = {}, Interval = {},  Requested Indicators: {:?}, Series: \n",
+            self.symbol, self.interval, self.asks
+        )?;
+        for (i, series) in self.series.iter().enumerate() {
+            write!(
+                f,
+                "Date: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}, ",
+                series.date, series.open, series.close, series.high, series.low, series.volume
+            )?;
+
+            for (indicator_name, indicator_values) in &self.indicators.sma {
+                if let Some(value) = indicator_values.get(i) {
+                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+                }
+            }
+
+            for (indicator_name, indicator_values) in &self.indicators.ema {
+                if let Some(value) = indicator_values.get(i) {
+                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+                }
+            }
+
+            for (indicator_name, indicator_values) in &self.indicators.rsi {
+                if let Some(value) = indicator_values.get(i) {
+                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+                }
+            }
+
+            // Remove trailing comma and space
+            //let _ = f.write_str("\b\b");
+
+            if i < self.series.len() - 1 {
+                writeln!(f, ",")?;
+            }
+        }
+
+        Ok(())
+    }
+}

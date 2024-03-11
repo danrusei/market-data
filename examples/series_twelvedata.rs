@@ -36,7 +36,7 @@ fn main() -> Result<()> {
     // you can reuse the client to download additional series
     client
         .site
-        .intraday_series("MSFT".to_string(), 60, Interval::Hour2)?;
+        .intraday_series("MSFT".to_string(), 200, Interval::Hour2)?;
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data()?.transform_data();

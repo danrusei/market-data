@@ -25,5 +25,5 @@ pub(crate) fn calculate_ema(series: &[Series], period: usize) -> (Ask, VecDeque<
 
     assert!(ema_values.len() == series.len());
 
-    (Ask::SMA(period), ema_values)
+    (Ask::EMA(period), ema_values)
 }

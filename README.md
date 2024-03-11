@@ -39,7 +39,7 @@ data.iter().for_each(|output| match output {
 // the client can be reused for additional series
 client
     .site
-    .intraday_series("MSFT", 60, Interval::Hour2)?;
+    .intraday_series("MSFT", 200, Interval::Hour2)?;
 
 // the consuming the client pattern, the client can't be reused for configuring new series
 let data2 = client.create_endpoint()?.get_data()?.transform_data();

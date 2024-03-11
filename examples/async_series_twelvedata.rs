@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
-    client.site.intraday_series("MSFT", 60, Interval::Hour2);
+    client.site.intraday_series("MSFT", 200, Interval::Hour2);
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data().await?.transform_data();

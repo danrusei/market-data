@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
-use market_data::{EnhancedMarketSeries, MarketClient, TwelveInterval, Twelvedata};
+use market_data::{EnhancedMarketSeries, Interval, MarketClient, Twelvedata};
 use std::env::var;
 //use std::fs::File;
 
@@ -17,8 +17,8 @@ async fn main() -> Result<()> {
     // configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
     // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
     // multiple requests can be added
-    site.weekly_series("GOOGL".to_string(), 40);
-    site.daily_series("GOOGL".to_string(), 30);
+    site.weekly_series("GOOGL", 40);
+    site.daily_series("GOOGL", 30);
 
     // create the MarketClient
     let mut client = MarketClient::new(site);
@@ -35,9 +35,7 @@ async fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
-    client
-        .site
-        .intraday_series("MSFT".to_string(), 60, TwelveInterval::Hour2);
+    client.site.intraday_series("MSFT", 200, Interval::Hour2)?;
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data().await?.transform_data();

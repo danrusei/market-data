@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    client::{MarketSeries, Series},
+    client::{Interval, MarketSeries, Series},
     errors::MarketResult,
     publishers::Publisher,
     rest_call::Client,
@@ -34,75 +34,71 @@ pub struct Twelvedata {
 #[derive(Debug, Default)]
 pub struct TDRequest {
     symbol: String,
-    interval: TwelveInterval,
+    interval: String,
     output_size: u32,
-}
-
-#[derive(Debug, Default, PartialEq)]
-pub enum TwelveInterval {
-    Min1,
-    Min5,
-    Min15,
-    Min30,
-    Min45,
-    Hour1,
-    Hour2,
-    Hour4,
-    #[default]
-    Daily,
-    Weekly,
-    Monthly,
 }
 
 impl Twelvedata {
     /// create new instance of Twelvedata
-    pub fn new(token: String) -> Self {
+    pub fn new(token: impl Into<String>) -> Self {
         Twelvedata {
-            token: token,
+            token: token.into(),
             ..Default::default()
         }
     }
 
     /// Request for intraday series
+    /// it supports only the following intervals: 1min, 5min, 15min, 30min, 45min, 1h, 2h, 4h
     pub fn intraday_series(
         &mut self,
-        symbol: String,
+        symbol: impl Into<String>,
         output_size: u32,
-        interval: TwelveInterval,
-    ) -> () {
+        interval: Interval,
+    ) -> MarketResult<()> {
+        let interval = match interval {
+            Interval::Min1 => "1min".to_string(),
+            Interval::Min5 => "5min".to_string(),
+            Interval::Min15 => "15min".to_string(),
+            Interval::Min30 => "30min".to_string(),
+            Interval::Hour1 => "1h".to_string(),
+            Interval::Hour2 => "2h".to_string(),
+            Interval::Hour4 => "4h".to_string(),
+            _ => Err(MarketError::UnsuportedInterval(format!(
+                "{} interval is not supported by AlphaVantage",
+                interval
+            )))?,
+        };
         self.requests.push(TDRequest {
-            symbol,
+            symbol: symbol.into(),
             interval,
             output_size,
-        })
+        });
+        Ok(())
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = TwelveInterval::Daily;
+    pub fn daily_series(&mut self, symbol: impl Into<String>, output_size: u32) -> () {
         self.requests.push(TDRequest {
-            symbol,
-            interval,
+            symbol: symbol.into(),
+            interval: "1day".to_string(),
             output_size,
         });
     }
 
     /// Request for weekly series
-    pub fn weekly_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = TwelveInterval::Weekly;
+    pub fn weekly_series(&mut self, symbol: impl Into<String>, output_size: u32) -> () {
         self.requests.push(TDRequest {
-            symbol,
-            interval,
+            symbol: symbol.into(),
+            interval: "1week".to_string(),
             output_size,
         });
     }
 
     /// Request for monthly series
-    pub fn monthly_series(&mut self, symbol: String, output_size: u32) -> () {
-        let interval = TwelveInterval::Monthly;
+    pub fn monthly_series(&mut self, symbol: impl Into<String>, output_size: u32) -> () {
         self.requests.push(TDRequest {
-            symbol,
-            interval,
+            symbol: symbol.into(),
+            interval: "1month".to_string(),
             output_size,
         });
     }
@@ -118,10 +114,7 @@ impl Publisher for Twelvedata {
                 let constructed_url = base_url
                     .join(&format!(
                         "?symbol={}&interval={}&outputsize={}&format=json&apikey={}",
-                        request.symbol,
-                        request.interval.to_string(),
-                        request.output_size,
-                        self.token
+                        request.symbol, request.interval, request.output_size, self.token
                     ))
                     .unwrap();
                 constructed_url
@@ -275,25 +268,7 @@ fn transform(data: &TwelvedataPrices) -> MarketResult<MarketSeries> {
 
     Ok(MarketSeries {
         symbol: data.meta.symbol.clone(),
-        interval: data.meta.interval.clone(),
+        interval: data.meta.interval.clone().into(),
         data: data_series,
     })
-}
-
-impl ToString for TwelveInterval {
-    fn to_string(&self) -> String {
-        match self {
-            TwelveInterval::Min1 => String::from("1min"),
-            TwelveInterval::Min5 => String::from("5min"),
-            TwelveInterval::Min15 => String::from("15min"),
-            TwelveInterval::Min30 => String::from("30min"),
-            TwelveInterval::Min45 => String::from("45min"),
-            TwelveInterval::Hour1 => String::from("1h"),
-            TwelveInterval::Hour2 => String::from("2h"),
-            TwelveInterval::Hour4 => String::from("4h"),
-            TwelveInterval::Daily => String::from("1day"),
-            TwelveInterval::Weekly => String::from("1week"),
-            TwelveInterval::Monthly => String::from("1month"),
-        }
-    }
 }

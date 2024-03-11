@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use url::Url;
 
 use crate::{
-    client::{MarketSeries, Series},
+    client::{Interval, MarketSeries, Series},
     errors::MarketResult,
     publishers::Publisher,
     rest_call::Client,
@@ -42,18 +42,8 @@ pub struct AlphaVantage {
 pub struct AVRequest {
     symbol: String,
     function: Function,
-    interval: Option<AlphaInterval>,
+    interval: Option<String>,
     output_size: OutputSize,
-}
-
-#[derive(Debug, Default, PartialEq)]
-pub enum AlphaInterval {
-    Min1,
-    Min5,
-    Min15,
-    Min30,
-    #[default]
-    Min60,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -90,34 +80,47 @@ pub enum OutputSize {
 
 impl AlphaVantage {
     /// create new instance of AlphaVantage
-    pub fn new(token: String) -> Self {
+    pub fn new(token: impl Into<String>) -> Self {
         AlphaVantage {
-            token: token,
+            token: token.into(),
             ..Default::default()
         }
     }
 
     /// Request for intraday series
+    /// it supports only the following intervals: 1min, 5min, 15min, 30min, 60min
     pub fn intraday_series(
         &mut self,
-        symbol: String,
+        symbol: impl Into<String>,
         output_size: OutputSize,
-        interval: AlphaInterval,
-    ) -> () {
+        interval: Interval,
+    ) -> MarketResult<()> {
         let function = Function::TimeSeriesIntraday;
+        let interval = match interval {
+            Interval::Min1 => "1min".to_string(),
+            Interval::Min5 => "5min".to_string(),
+            Interval::Min15 => "15min".to_string(),
+            Interval::Min30 => "30min".to_string(),
+            Interval::Hour1 => "60min".to_string(),
+            _ => Err(MarketError::UnsuportedInterval(format!(
+                "{} interval is not supported by AlphaVantage",
+                interval
+            )))?,
+        };
         self.requests.push(AVRequest {
-            symbol,
+            symbol: symbol.into(),
             function,
             interval: Some(interval),
             output_size,
         });
+        Ok(())
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: String, output_size: OutputSize) -> () {
+    pub fn daily_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
         let function = Function::TimeSeriesDaily;
         self.requests.push(AVRequest {
-            symbol,
+            symbol: symbol.into(),
             function,
             interval: None,
             output_size,
@@ -125,10 +128,10 @@ impl AlphaVantage {
     }
 
     /// Request for weekly series
-    pub fn weekly_series(&mut self, symbol: String, output_size: OutputSize) -> () {
+    pub fn weekly_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
         let function = Function::TimeSeriesWeekly;
         self.requests.push(AVRequest {
-            symbol,
+            symbol: symbol.into(),
             function,
             interval: None,
             output_size,
@@ -136,10 +139,10 @@ impl AlphaVantage {
     }
 
     /// Request for monthly series
-    pub fn monthly_series(&mut self, symbol: String, output_size: OutputSize) -> () {
+    pub fn monthly_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
         let function = Function::TimeSeriesMonthly;
         self.requests.push(AVRequest {
-            symbol,
+            symbol: symbol.into(),
             function,
             interval: None,
             output_size,
@@ -161,7 +164,7 @@ impl Publisher for AlphaVantage {
                             "query?function={}&symbol={}&interval={}&outputsize={}&datatype=json&apikey={}",
                             request.function.to_string(),
                             request.symbol,
-                            request.interval.as_ref().unwrap().to_string(),
+                            request.interval.as_ref().unwrap(),
                             request.output_size.to_string(),
                             self.token
                         ))
@@ -280,7 +283,7 @@ impl Publisher for AlphaVantage {
 
             result.push(Ok(MarketSeries {
                 symbol: intra_data.meta_data.symbol.clone(),
-                interval: intra_data.meta_data.interval.clone(),
+                interval: intra_data.meta_data.interval.clone().into(),
                 data: market_series,
             }))
         }
@@ -303,7 +306,7 @@ impl Publisher for AlphaVantage {
 
             result.push(Ok(MarketSeries {
                 symbol: daily_data.meta_data.symbol.clone(),
-                interval: "not_implemented".to_string(),
+                interval: Interval::Daily,
                 data: market_series,
             }))
         }
@@ -326,7 +329,7 @@ impl Publisher for AlphaVantage {
 
             result.push(Ok(MarketSeries {
                 symbol: wm_data.meta_data.symbol.clone(),
-                interval: "not_implemented".to_string(),
+                interval: Interval::Weekly,
                 data: market_series,
             }))
         }
@@ -475,18 +478,6 @@ impl ToString for OutputSize {
         match self {
             OutputSize::Compact => String::from("Compact"),
             OutputSize::Full => String::from("Full"),
-        }
-    }
-}
-
-impl ToString for AlphaInterval {
-    fn to_string(&self) -> String {
-        match self {
-            AlphaInterval::Min1 => String::from("1min"),
-            AlphaInterval::Min5 => String::from("5min"),
-            AlphaInterval::Min15 => String::from("15min"),
-            AlphaInterval::Min30 => String::from("30min"),
-            AlphaInterval::Min60 => String::from("60min"),
         }
     }
 }

@@ -13,61 +13,61 @@ To enable async feature:
 Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for more examples.
 
 ```rust
-    // Select a Publisher from the available ones
-    let mut site = Twelvedata::new(TOKEN.to_string());
+// Select a Publisher from the available ones
+let mut site = Twelvedata::new(TOKEN.to_string());
 
-    // configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
-    // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
-    // multiple requests can be added
-    site.weekly_series("GOOGL".to_string(), 40);
-    site.daily_series("GOOGL".to_string(), 30);
+// configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
+// output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
+// multiple requests can be added
+site.weekly_series("GOOGL", 40);
+site.daily_series("GOOGL", 30);
 
-    // create the MarketClient
-    let mut client = MarketClient::new(site);
+// create the MarketClient
+let mut client = MarketClient::new(site);
 
-    // creates the query URL & download the raw data
-    client = client.create_endpoint()?.get_data()?;
-    // transform into MarketSeries, that can be used for further processing
-    let data = client.transform_data();
+// creates the query URL & download the raw data
+client = client.create_endpoint()?.get_data()?;
+// transform into MarketSeries, that can be used for further processing
+let data = client.transform_data();
 
-    // prints the data
-    data.iter().for_each(|output| match output {
-        Ok(data) => println!("{}\n\n", data),
-        Err(err) => println!("{}", err),
-    });
+// prints the data
+data.iter().for_each(|output| match output {
+    Ok(data) => println!("{}\n\n", data),
+    Err(err) => println!("{}", err),
+});
 
-    // the client can be reused for additional series
-    client
-        .site
-        .intraday_series("MSFT".to_string(), 60, Interval::Hour2);
+// the client can be reused for additional series
+client
+    .site
+    .intraday_series("MSFT", 200, Interval::Hour2)?;
 
-    // the consuming the client pattern, the client can't be reused for configuring new series
-    let data2 = client.create_endpoint()?.get_data()?.transform_data();
+// the consuming the client pattern, the client can't be reused for configuring new series
+let data2 = client.create_endpoint()?.get_data()?.transform_data();
 
-    // the data can be enhanced with the calculation of a number of  market indicators
-    let enhanced_data: Vec<EnhancedMarketSeries> = data2
-        .into_iter()
-        .filter_map(|series| series.ok())
-        .map(|series| {
-            series
-                .enhance_data()
-                .with_sma(10)
-                .with_ema(20)
-                .with_ema(6)
-                .with_rsi(14)
-                .calculate()
-        })
-        .collect();
+// the data can be enhanced with the calculation of a number of  market indicators
+let enhanced_data: Vec<EnhancedMarketSeries> = data2
+    .into_iter()
+    .filter_map(|series| series.ok())
+    .map(|series| {
+        series
+            .enhance_data()
+            .with_sma(10)
+            .with_ema(20)
+            .with_ema(6)
+            .with_rsi(14)
+            .calculate()
+    })
+    .collect();
 
-    enhanced_data
-        .into_iter()
-        .for_each(|enhanced_series| println!("{}", enhanced_series));
+enhanced_data
+    .into_iter()
+    .for_each(|enhanced_series| println!("{}", enhanced_series));
 
-    // Prints:
-    // Date: 2024-02-23, Open: 410.14, Close: 410.32, High: 410.85, Low: 409.84, Volume: 1814939.00, SMA 10: 405.48, EMA 20: 405.94, EMA 6: 408.56, RSI 14: 59.19,
-    // Date: 2024-02-23, Open: 410.11, Close: 410.12, High: 410.78, Low: 409.53, Volume: 1998775.00, SMA 10: 406.31, EMA 20: 406.34, EMA 6: 409.00, RSI 14: 57.86,
-    // Date: 2024-02-23, Open: 410.77, Close: 410.11, High: 410.86, Low: 408.97, Volume: 2621471.00, SMA 10: 407.10, EMA 20: 406.70, EMA 6: 409.32, RSI 14: 64.33,
-    // Date: 2024-02-23, Open: 415.67, Close: 410.73, High: 415.86, Low: 410.09, Volume: 6230853.00, SMA 10: 408.32, EMA 20: 407.08, EMA 6: 409.72, RSI 14: 68.58,
+// Prints:
+// Date: 2024-02-23, Open: 410.14, Close: 410.32, High: 410.85, Low: 409.84, Volume: 1814939.00, SMA 10: 405.48, EMA 20: 405.94, EMA 6: 408.56, RSI 14: 59.19,
+// Date: 2024-02-23, Open: 410.11, Close: 410.12, High: 410.78, Low: 409.53, Volume: 1998775.00, SMA 10: 406.31, EMA 20: 406.34, EMA 6: 409.00, RSI 14: 57.86,
+// Date: 2024-02-23, Open: 410.77, Close: 410.11, High: 410.86, Low: 408.97, Volume: 2621471.00, SMA 10: 407.10, EMA 20: 406.70, EMA 6: 409.32, RSI 14: 64.33,
+// Date: 2024-02-23, Open: 415.67, Close: 410.73, High: 415.86, Low: 410.09, Volume: 6230853.00, SMA 10: 408.32, EMA 20: 407.08, EMA 6: 409.72, RSI 14: 68.58,
 ```
 
 ## Supported Publishers

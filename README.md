@@ -53,8 +53,8 @@ let enhanced_data: Vec<EnhancedMarketSeries> = data2
             .enhance_data()
             .with_sma(10)
             .with_ema(20)
-            .with_ema(6)
             .with_rsi(14)
+            .with_macd(12, 26, 9)
             .calculate()
     })
     .collect();
@@ -62,13 +62,24 @@ let enhanced_data: Vec<EnhancedMarketSeries> = data2
 enhanced_data
     .into_iter()
     .for_each(|enhanced_series| println!("{}", enhanced_series));
-
-// Prints:
-// Date: 2024-02-23, Open: 410.14, Close: 410.32, High: 410.85, Low: 409.84, Volume: 1814939.00, SMA 10: 405.48, EMA 20: 405.94, EMA 6: 408.56, RSI 14: 59.19,
-// Date: 2024-02-23, Open: 410.11, Close: 410.12, High: 410.78, Low: 409.53, Volume: 1998775.00, SMA 10: 406.31, EMA 20: 406.34, EMA 6: 409.00, RSI 14: 57.86,
-// Date: 2024-02-23, Open: 410.77, Close: 410.11, High: 410.86, Low: 408.97, Volume: 2621471.00, SMA 10: 407.10, EMA 20: 406.70, EMA 6: 409.32, RSI 14: 64.33,
-// Date: 2024-02-23, Open: 415.67, Close: 410.73, High: 415.86, Low: 410.09, Volume: 6230853.00, SMA 10: 408.32, EMA 20: 407.08, EMA 6: 409.72, RSI 14: 68.58,
 ```
+
+// Example Print of the Enhanced Series on GOOGL - calculating SMA 10, EMA 20, RSI 14, MACD (12, 26, 9):
+
+Date: 2023-12-27, Open: 141.59, Close: 140.37, High: 142.08, Low: 139.89, Volume: 19628600.00, SMA 10: 137.17, EMA 20: 136.40, RSI 14: 62.03, MACD (12, 26, 9): 1.87, 1.03, 0.84, ,
+
+Date: 2023-12-28, Open: 140.78, Close: 140.23, High: 141.14, Low: 139.75, Volume: 16045700.00, SMA 10: 137.94, EMA 20: 136.77, RSI 14: 61.58, MACD (12, 26, 9): 1.93, 1.21, 0.72, ,
+
+Date: 2023-12-29, Open: 139.63, Close: 139.69, High: 140.36, Low: 138.78, Volume: 18727200.00, SMA 10: 138.71, EMA 20: 137.05, RSI 14: 59.79, MACD (12, 26, 9): 1.92, 1.35, 0.57, ,
+
+Date: 2024-01-02, Open: 138.55, Close: 138.17, High: 139.45, Low: 136.48, Volume: 23711200.00, SMA 10: 139.27, EMA 20: 137.15, RSI 14: 54.93, MACD (12, 26, 9): 1.76, 1.43, 0.33, ,
+
+Date: 2024-01-03, Open: 137.25, Close: 138.92, High: 139.63, Low: 137.08, Volume: 24212100.00, SMA 10: 139.58, EMA 20: 137.32, RSI 14: 56.79, MACD (12, 26, 9): 1.68, 1.48, 0.20, ,
+
+Date: 2024-01-04, Open: 138.42, Close: 136.39, High: 139.16, Low: 136.35, Volume: 27137700.00, SMA 10: 139.55, EMA 20: 137.23, RSI 14: 49.37, MACD (12, 26, 9): 1.40, 1.47, -0.07, ,
+
+Date: 2024-01-05, Open: 136.75, Close: 135.73, High: 137.16, Low: 135.15, Volume: 22506000.00, SMA 10: 139.29, EMA 20: 137.09, RSI 14: 47.62, MACD (12, 26, 9): 1.11, 1.39, -0.29, ,
+
 
 ## Supported Publishers
 
@@ -93,12 +104,10 @@ Alternative providers, to be added:
 * [x] [Simple Moving Average (SMA)](https://www.investopedia.com/terms/s/sma.asp)
 * [x] [Exponential Moving Averages (EMA)](https://www.investopedia.com/terms/e/ema.asp)
 * [x] [Relative Strength Index (RSI)](https://www.investopedia.com/terms/r/rsi.asp)
+* [x] [Stochastic Oscillator](https://www.investopedia.com/terms/s/stochasticoscillator.asp)
+* [x] [Moving Average Convergence/Divergence (MACD)](https://www.investopedia.com/terms/m/macd.asp)
 
-Others to be implemented:
-
-* [Stochastic Oscillator](https://www.investopedia.com/terms/s/stochasticoscillator.asp)
-* [Moving Average Convergence/Divergence](https://www.investopedia.com/terms/m/macd.asp)
-* and others
+Contribution is welcomed, if you need other indicators raise a PR or create an issue.
 
 
 ## For development

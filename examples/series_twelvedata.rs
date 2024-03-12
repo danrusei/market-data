@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
     // multiple requests can be added
     site.weekly_series("GOOGL".to_string(), 40);
-    site.daily_series("GOOGL".to_string(), 30);
+    site.intraday_series("MSFT".to_string(), 40, Interval::Hour2)?;
 
     // create the MarketClient
     let mut client = MarketClient::new(site);
@@ -34,9 +34,7 @@ fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
-    client
-        .site
-        .intraday_series("MSFT".to_string(), 200, Interval::Hour2)?;
+    client.site.daily_series("GOOGL".to_string(), 300);
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data()?.transform_data();
@@ -50,8 +48,8 @@ fn main() -> Result<()> {
                 .enhance_data()
                 .with_sma(10)
                 .with_ema(20)
-                .with_ema(6)
                 .with_rsi(14)
+                .with_macd(12, 26, 9)
                 .calculate()
         })
         .collect();

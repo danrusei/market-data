@@ -17,5 +17,3 @@ pub(crate) fn calculate_sma(series: &[Series], period: usize) -> (Ask, VecDeque<
 
     (Ask::SMA(period), sma_values)
 }
-
-// from 0 to 9 index i have to populate with 0

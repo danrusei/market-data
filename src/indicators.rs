@@ -4,9 +4,12 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
+use self::stochastic::calculate_stochastic;
+
 pub(crate) mod ema;
 pub(crate) mod rsi;
 pub(crate) mod sma;
+pub(crate) mod stochastic;
 
 /// Holds the MarketSeries + the calculation for the supported indicators
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,6 +26,7 @@ pub enum Ask {
     SMA(usize),
     EMA(usize),
     RSI(usize),
+    Stochastic(usize),
 }
 
 /// It is part of the EnhancedMarketSeries struct
@@ -34,6 +38,8 @@ pub struct Indicators {
     pub ema: HashMap<String, VecDeque<f32>>,
     // Relative Strength Index
     pub rsi: HashMap<String, VecDeque<f32>>,
+    //  Stochastic Oscillator
+    pub stochastic: HashMap<String, VecDeque<f32>>,
 }
 
 impl EnhancedMarketSeries {
@@ -55,6 +61,12 @@ impl EnhancedMarketSeries {
         self
     }
 
+    /// Stochastic Oscillator, a period must be provided over which it will be calculated
+    pub fn with_stochastic(mut self, period: usize) -> Self {
+        self.asks.push(Ask::Stochastic(period));
+        self
+    }
+
     /// Calculate the indicators and populate within the EnhancedMarketSeries struct
     pub fn calculate(mut self) -> Self {
         let result: Vec<(Ask, VecDeque<f32>)> = self
@@ -64,6 +76,7 @@ impl EnhancedMarketSeries {
                 Ask::SMA(period) => calculate_sma(&self.series, period.clone()),
                 Ask::EMA(period) => calculate_ema(&self.series, period.clone()),
                 Ask::RSI(period) => calculate_rsi(&self.series, period.clone()),
+                Ask::Stochastic(period) => calculate_stochastic(&self.series, period.clone()),
             })
             .collect();
 
@@ -78,6 +91,11 @@ impl EnhancedMarketSeries {
                 Ask::RSI(value) => {
                     self.indicators.rsi.insert(format!("RSI {}", value), ind);
                 }
+                Ask::Stochastic(value) => {
+                    self.indicators
+                        .stochastic
+                        .insert(format!("STO {}", value), ind);
+                }
             }
         }
 
@@ -91,6 +109,7 @@ impl fmt::Display for Ask {
             Ask::SMA(period) => write!(f, "SMA({})", period),
             Ask::EMA(period) => write!(f, "EMA({})", period),
             Ask::RSI(period) => write!(f, "RSI({})", period),
+            Ask::Stochastic(period) => write!(f, "STO({})", period),
         }
     }
 }
@@ -122,6 +141,12 @@ impl fmt::Display for EnhancedMarketSeries {
             }
 
             for (indicator_name, indicator_values) in &self.indicators.rsi {
+                if let Some(value) = indicator_values.get(i) {
+                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+                }
+            }
+
+            for (indicator_name, indicator_values) in &self.indicators.stochastic {
                 if let Some(value) = indicator_values.get(i) {
                     write!(f, "{}: {:.2}, ", indicator_name, value)?;
                 }

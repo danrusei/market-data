@@ -4,6 +4,10 @@ use std::collections::VecDeque;
 // calculation based on:
 // https://www.investopedia.com/terms/r/rsi.asp
 pub(crate) fn calculate_rsi(series: &[Series], period: usize) -> (Ask, VecDeque<f32>) {
+    if series.len() <= period {
+        return (Ask::RSI(period), VecDeque::new());
+    }
+
     let mut gain_sum = 0.0;
     let mut loss_sum = 0.0;
 

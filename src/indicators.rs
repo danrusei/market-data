@@ -4,6 +4,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
 use self::{
+    bollinger::calculate_bollinger_bands,
     ema::{calculate_ema, calculate_ema_slice},
     macd::calculate_macd,
     rsi::calculate_rsi,
@@ -11,6 +12,7 @@ use self::{
     stochastic::calculate_stochastic,
 };
 
+pub(crate) mod bollinger;
 pub(crate) mod ema;
 pub(crate) mod macd;
 pub(crate) mod rsi;
@@ -20,10 +22,15 @@ pub(crate) mod stochastic;
 /// Holds the MarketSeries + the calculation for the supported indicators
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EnhancedMarketSeries {
+    /// holds symbol like: "GOOGL"
     pub symbol: String,
+    /// inteval from intraday to monthly
     pub interval: Interval,
+    /// the original series downloaded and parsed from publishers
     pub series: Vec<Series>,
+    /// the request for technical indicators
     pub asks: Vec<Ask>,
+    /// calculated indicators
     pub indicators: Indicators,
 }
 
@@ -34,21 +41,24 @@ pub enum Ask {
     RSI(usize),
     Stochastic(usize),
     MACD(usize, usize, usize),
+    BB(usize, usize),
 }
 
 /// It is part of the EnhancedMarketSeries struct
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Indicators {
-    // Simple Moving Average
+    /// Simple Moving Average
     pub sma: HashMap<String, VecDeque<f32>>,
-    // Exponential Moving Average
+    /// Exponential Moving Average
     pub ema: HashMap<String, VecDeque<f32>>,
-    // Relative Strength Index
+    /// Relative Strength Index
     pub rsi: HashMap<String, VecDeque<f32>>,
-    //  Stochastic Oscillator
+    ///  Stochastic Oscillator
     pub stochastic: HashMap<String, VecDeque<f32>>,
-    // Moving average convergence/divergence (MACD)
+    /// Moving average convergence/divergence (MACD)
     pub macd: HashMap<String, (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>)>,
+    /// Bollinger Band (BB)
+    pub bb: HashMap<String, (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>)>,
 }
 
 impl EnhancedMarketSeries {
@@ -79,6 +89,12 @@ impl EnhancedMarketSeries {
     /// Moving average convergence/divergence (MACD), a fast, slow & signal EMA values should be provided, default (12, 26, 9)
     pub fn with_macd(mut self, fast: usize, slow: usize, signal: usize) -> Self {
         self.asks.push(Ask::MACD(fast, slow, signal));
+        self
+    }
+
+    /// Bollinger Bands (BB), the period & standard deviation values should be provided, like (20, 2)
+    pub fn with_bb(mut self, period: usize, std_dev: usize) -> Self {
+        self.asks.push(Ask::BB(period, std_dev));
         self
     }
 
@@ -122,6 +138,15 @@ impl EnhancedMarketSeries {
                     (calc_macd, calc_signal, calc_histogram),
                 );
             }
+            Ask::BB(period, std_dev) => {
+                let (upper_band, mid_band, lower_band) =
+                    calculate_bollinger_bands(&self.series, period.clone(), std_dev.clone());
+
+                self.indicators.bb.insert(
+                    format!("BB ({}, {})", period, std_dev),
+                    (upper_band, mid_band, lower_band),
+                );
+            }
         });
 
         self
@@ -136,6 +161,7 @@ impl fmt::Display for Ask {
             Ask::RSI(period) => write!(f, "RSI({})", period),
             Ask::MACD(fast, slow, signal) => write!(f, "MACD({}, {}, {})", fast, slow, signal),
             Ask::Stochastic(period) => write!(f, "STO({})", period),
+            Ask::BB(period, std_dev) => write!(f, "BB({}, {})", period, std_dev),
         }
     }
 }
@@ -186,6 +212,20 @@ impl fmt::Display for EnhancedMarketSeries {
                                 f,
                                 "{}: {:.2}, {:.2}, {:.2}, ",
                                 indicator_name, macd_value, signal_value, hist_value
+                            )?;
+                        }
+                    }
+                }
+            }
+
+            for (indicator_name, (upper_band, mid_band, lower_band)) in &self.indicators.bb {
+                if let Some(upper_band) = upper_band.get(i) {
+                    if let Some(mid_band) = mid_band.get(i) {
+                        if let Some(lower_band) = lower_band.get(i) {
+                            write!(
+                                f,
+                                "{}: {:.2}, {:.2}, {:.2}, ",
+                                indicator_name, upper_band, mid_band, lower_band
                             )?;
                         }
                     }

@@ -1,12 +1,18 @@
-use crate::indicators::{ema::calculate_ema, rsi::calculate_rsi, sma::calculate_sma};
 use crate::{Interval, Series};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
-use self::stochastic::calculate_stochastic;
+use self::{
+    ema::{calculate_ema, calculate_ema_slice},
+    macd::calculate_macd,
+    rsi::calculate_rsi,
+    sma::calculate_sma,
+    stochastic::calculate_stochastic,
+};
 
 pub(crate) mod ema;
+pub(crate) mod macd;
 pub(crate) mod rsi;
 pub(crate) mod sma;
 pub(crate) mod stochastic;
@@ -27,6 +33,7 @@ pub enum Ask {
     EMA(usize),
     RSI(usize),
     Stochastic(usize),
+    MACD(usize, usize, usize),
 }
 
 /// It is part of the EnhancedMarketSeries struct
@@ -40,6 +47,8 @@ pub struct Indicators {
     pub rsi: HashMap<String, VecDeque<f32>>,
     //  Stochastic Oscillator
     pub stochastic: HashMap<String, VecDeque<f32>>,
+    // Moving average convergence/divergence (MACD)
+    pub macd: HashMap<String, (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>)>,
 }
 
 impl EnhancedMarketSeries {
@@ -67,37 +76,53 @@ impl EnhancedMarketSeries {
         self
     }
 
+    /// Moving average convergence/divergence (MACD), a fast, slow & signal EMA values should be provided, default (12, 26, 9)
+    pub fn with_macd(mut self, fast: usize, slow: usize, signal: usize) -> Self {
+        self.asks.push(Ask::MACD(fast, slow, signal));
+        self
+    }
+
     /// Calculate the indicators and populate within the EnhancedMarketSeries struct
     pub fn calculate(mut self) -> Self {
-        let result: Vec<(Ask, VecDeque<f32>)> = self
-            .asks
-            .iter()
-            .map(|ind| match ind {
-                Ask::SMA(period) => calculate_sma(&self.series, period.clone()),
-                Ask::EMA(period) => calculate_ema(&self.series, period.clone()),
-                Ask::RSI(period) => calculate_rsi(&self.series, period.clone()),
-                Ask::Stochastic(period) => calculate_stochastic(&self.series, period.clone()),
-            })
-            .collect();
-
-        for (ask, ind) in result.into_iter() {
-            match ask {
-                Ask::SMA(value) => {
-                    self.indicators.sma.insert(format!("SMA {}", value), ind);
-                }
-                Ask::EMA(value) => {
-                    self.indicators.ema.insert(format!("EMA {}", value), ind);
-                }
-                Ask::RSI(value) => {
-                    self.indicators.rsi.insert(format!("RSI {}", value), ind);
-                }
-                Ask::Stochastic(value) => {
-                    self.indicators
-                        .stochastic
-                        .insert(format!("STO {}", value), ind);
-                }
+        self.asks.iter().for_each(|ind| match ind {
+            Ask::SMA(period) => {
+                let calc_sma = calculate_sma(&self.series, period.clone());
+                self.indicators
+                    .sma
+                    .insert(format!("SMA {}", period), calc_sma);
             }
-        }
+
+            Ask::EMA(period) => {
+                let calc_ema = calculate_ema(&self.series, period.clone());
+                self.indicators
+                    .ema
+                    .insert(format!("EMA {}", period), calc_ema);
+            }
+
+            Ask::RSI(period) => {
+                let calc_rsi = calculate_rsi(&self.series, period.clone());
+                self.indicators
+                    .rsi
+                    .insert(format!("RSI {}", period), calc_rsi);
+            }
+
+            Ask::Stochastic(period) => {
+                let calc_stoch = calculate_stochastic(&self.series, period.clone());
+                self.indicators
+                    .stochastic
+                    .insert(format!("STO {}", period), calc_stoch);
+            }
+
+            Ask::MACD(fast, slow, signal) => {
+                let (calc_macd, calc_signal, calc_histogram) =
+                    calculate_macd(&self.series, fast.clone(), slow.clone(), signal.clone());
+
+                self.indicators.macd.insert(
+                    format!("MACD ({}, {}, {})", fast, slow, signal),
+                    (calc_macd, calc_signal, calc_histogram),
+                );
+            }
+        });
 
         self
     }
@@ -109,6 +134,7 @@ impl fmt::Display for Ask {
             Ask::SMA(period) => write!(f, "SMA({})", period),
             Ask::EMA(period) => write!(f, "EMA({})", period),
             Ask::RSI(period) => write!(f, "RSI({})", period),
+            Ask::MACD(fast, slow, signal) => write!(f, "MACD({}, {}, {})", fast, slow, signal),
             Ask::Stochastic(period) => write!(f, "STO({})", period),
         }
     }
@@ -149,6 +175,20 @@ impl fmt::Display for EnhancedMarketSeries {
             for (indicator_name, indicator_values) in &self.indicators.stochastic {
                 if let Some(value) = indicator_values.get(i) {
                     write!(f, "{}: {:.2}, ", indicator_name, value)?;
+                }
+            }
+
+            for (indicator_name, (macd, signal, histogram)) in &self.indicators.macd {
+                if let Some(macd_value) = macd.get(i) {
+                    if let Some(signal_value) = signal.get(i) {
+                        if let Some(hist_value) = histogram.get(i) {
+                            write!(
+                                f,
+                                "{}: {:.2}, {:.2}, {:.2}, ",
+                                indicator_name, macd_value, signal_value, hist_value
+                            )?;
+                        }
+                    }
                 }
             }
 

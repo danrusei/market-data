@@ -1,12 +1,12 @@
-use crate::{indicators::Ask, Series};
+use crate::Series;
 use std::collections::VecDeque;
 
 // calculation based on:
 // https://www.investopedia.com/terms/s/stochasticoscillator.asp
 
-pub(crate) fn calculate_stochastic(series: &[Series], period: usize) -> (Ask, VecDeque<f32>) {
+pub(crate) fn calculate_stochastic(series: &[Series], period: usize) -> VecDeque<f32> {
     if series.len() <= period {
-        return (Ask::Stochastic(period), VecDeque::new());
+        return VecDeque::new();
     }
 
     let mut stochastic_values = VecDeque::new();
@@ -47,5 +47,5 @@ pub(crate) fn calculate_stochastic(series: &[Series], period: usize) -> (Ask, Ve
 
     assert!(stochastic_values.len() == series.len());
 
-    (Ask::Stochastic(period), stochastic_values)
+    stochastic_values
 }

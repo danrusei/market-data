@@ -1,11 +1,11 @@
-use crate::{indicators::Ask, Series};
+use crate::Series;
 use std::collections::VecDeque;
 
 // calculation based on:
 // https://www.investopedia.com/terms/r/rsi.asp
-pub(crate) fn calculate_rsi(series: &[Series], period: usize) -> (Ask, VecDeque<f32>) {
+pub(crate) fn calculate_rsi(series: &[Series], period: usize) -> VecDeque<f32> {
     if series.len() <= period {
-        return (Ask::RSI(period), VecDeque::new());
+        return VecDeque::new();
     }
 
     let mut gain_sum = 0.0;
@@ -60,5 +60,5 @@ pub(crate) fn calculate_rsi(series: &[Series], period: usize) -> (Ask, VecDeque<
 
     assert!(rsi_values.len() == series.len());
 
-    (Ask::RSI(period), rsi_values)
+    rsi_values
 }

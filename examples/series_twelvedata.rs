@@ -51,7 +51,7 @@ fn main() -> Result<()> {
                 .with_sma(10)
                 .with_ema(20)
                 .with_rsi(14)
-                .with_stochastic(14)
+                .with_macd(12, 26, 9)
                 .calculate()
         })
         .collect();

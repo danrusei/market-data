@@ -211,7 +211,7 @@ struct YahooPrices {
 #[derive(Debug, Serialize, Deserialize)]
 struct Chart {
     result: Vec<Result>,
-    error: String,
+    error: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -272,7 +272,7 @@ struct TradingPeriod {
 #[derive(Debug, Serialize, Deserialize)]
 struct Indicators {
     quote: Vec<Quote>,
-    adjclose: Vec<AdjClose>,
+    adjclose: Option<Vec<AdjClose>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -293,10 +293,10 @@ fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketS
     let mut result = Vec::new();
 
     // validate the data, first check is status
-    if data.chart.error != "null".to_string() {
+    if let Some(error) = &data.chart.error {
         result.push(Err(MarketError::DownloadedData(format!(
             "The return data has some error: {}",
-            data.chart.error
+            error
         ))));
     }
 
@@ -324,21 +324,23 @@ fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketS
             }
         }
 
-        for (i, series) in data.indicators.quote.iter().enumerate() {
-            let open: f32 = series.open[i] as f32;
-            let close: f32 = series.close[i] as f32;
-            let high: f32 = series.high[i] as f32;
-            let low: f32 = series.low[i] as f32;
-            let volume: f32 = series.volume[i] as f32;
+        for series in data.indicators.quote.iter() {
+            for j in 1..series.open.len() - 1 {
+                let open: f32 = series.open[j] as f32;
+                let close: f32 = series.close[j] as f32;
+                let high: f32 = series.high[j] as f32;
+                let low: f32 = series.low[j] as f32;
+                let volume: f32 = series.volume[j] as f32;
 
-            data_series.push(Series {
-                date: timestamps[i],
-                open,
-                close,
-                high,
-                low,
-                volume,
-            })
+                data_series.push(Series {
+                    date: timestamps[j],
+                    open,
+                    close,
+                    high,
+                    low,
+                    volume,
+                })
+            }
 
             // sort the series by date
             //data_series.sort_by_key(|item| item.date);

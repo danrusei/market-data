@@ -29,6 +29,7 @@ pub struct Polygon {
     endpoints: Vec<url::Url>,
     data: Vec<PolygonPrices>,
     // interval should be maintained, as it is necesarry in transformation phase
+    // TO FIX, should be a Vec<Interval>
     interval: Interval,
 }
 

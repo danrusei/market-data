@@ -2,6 +2,7 @@ pub(crate) mod alphavantage;
 pub(crate) mod iexcloud;
 pub(crate) mod polygon_io;
 pub(crate) mod twelvedata;
+pub(crate) mod yahoo_finance;
 
 use crate::{client::MarketSeries, errors::MarketResult};
 

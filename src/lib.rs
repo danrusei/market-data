@@ -19,6 +19,7 @@ pub use publishers::{
     iexcloud::Iex,
     polygon_io::Polygon,
     twelvedata::Twelvedata,
+    yahoo_finance::YahooFin,
 };
 
 mod indicators;

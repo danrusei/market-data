@@ -17,6 +17,7 @@ mod publishers;
 pub use publishers::{
     alphavantage::{AlphaVantage, OutputSize},
     iexcloud::Iex,
+    polygon_io::Polygon,
     twelvedata::Twelvedata,
 };
 

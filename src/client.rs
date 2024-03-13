@@ -67,7 +67,7 @@ pub struct Series {
     pub volume: f32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub enum Interval {
     Min1,
     Min5,

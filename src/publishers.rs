@@ -1,5 +1,6 @@
 pub(crate) mod alphavantage;
 pub(crate) mod iexcloud;
+pub(crate) mod polygon_io;
 pub(crate) mod twelvedata;
 
 use crate::{client::MarketSeries, errors::MarketResult};

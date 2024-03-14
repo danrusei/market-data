@@ -1,20 +1,19 @@
-name: Market-Data
-
+name: "Market-Data"
 on:
   push:
-    branches: [master]
   pull_request:
-    branches: [master]
+
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
+    name: cargo test
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Build
         run: cargo build --verbose
       - name: Run example series_alphavantage
@@ -23,5 +22,22 @@ jobs:
         run: cargo test --example series_iexcloud
       - name: Run example series_twelvedata
         run: cargo test --example series_twelvedata
+      - name: Run example series_polygon_io
+        run: cargo test --example series_polygon_io
+      - name: Run example series_yahoo_finance
+        run: cargo test --example series_yahoo_finance
       - name: Run example async_series_twelvedata
         run: cargo test --example async_series_twelvedata --features="use-async" --no-default-features
+
+   # Check formatting with rustfmt
+  formatting:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Ensure rustfmt is installed and setup problem matcher
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt
+      - name: Rustfmt Check
+        uses: actions-rust-lang/rustfmt@v1

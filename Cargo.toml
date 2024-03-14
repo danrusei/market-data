@@ -52,3 +52,13 @@ required-features = ["use-sync"]
 name = "async_series_twelvedata"
 path = "examples/async_series_twelvedata.rs"
 required-features = ["use-async"]
+
+[[example]]
+name = "series_polygon_io"
+path = "examples/series_polygon_io.rs"
+required-features = ["use-sync"]
+
+[[example]]
+name = "series_yahoo_finance"
+path = "examples/series_yahoo_finance.rs"
+required-features = ["use-sync"]

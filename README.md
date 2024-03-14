@@ -2,7 +2,7 @@
 
 A Rust lib to fetch & enhance historical time-series stock market data.
 
-The Sync version using the [ureq](https://crates.io/crates/ureq) http client is the default. An Async version using [reqwest](https://crates.io/crates/reqwest) http client can be selected by enabling the "use-async" feature.
+Default is the Sync version that is using [ureq](https://crates.io/crates/ureq) as http client. An Async version using [reqwest](https://crates.io/crates/reqwest) http client can be enabled using the "use-async" feature.
 
 To enable async feature:
 
@@ -10,7 +10,7 @@ To enable async feature:
 
 ## Usage
 
-Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for more examples.
+Check the [Examples folder](https://github.com/danrusei/market-data/tree/main/examples) for examples per publisher.
 
 ```rust
 // Select a Publisher from the available ones
@@ -64,8 +64,9 @@ enhanced_data
     .for_each(|enhanced_series| println!("{}", enhanced_series));
 ```
 
-// Example Print of the Enhanced Series on GOOGL - calculating SMA 10, EMA 20, RSI 14, MACD (12, 26, 9):
+// Print example of the Enhanced Series on GOOGL Daily - with SMA 10, EMA 20, RSI 14, MACD (12, 26, 9):
 
+```bash
 Date: 2023-12-27, Open: 141.59, Close: 140.37, High: 142.08, Low: 139.89, Volume: 19628600.00, SMA 10: 137.17, EMA 20: 136.40, RSI 14: 62.03, MACD (12, 26, 9): 1.87, 1.03, 0.84, ,
 
 Date: 2023-12-28, Open: 140.78, Close: 140.23, High: 141.14, Low: 139.75, Volume: 16045700.00, SMA 10: 137.94, EMA 20: 136.77, RSI 14: 61.58, MACD (12, 26, 9): 1.93, 1.21, 0.72, ,
@@ -79,25 +80,23 @@ Date: 2024-01-03, Open: 137.25, Close: 138.92, High: 139.63, Low: 137.08, Volume
 Date: 2024-01-04, Open: 138.42, Close: 136.39, High: 139.16, Low: 136.35, Volume: 27137700.00, SMA 10: 139.55, EMA 20: 137.23, RSI 14: 49.37, MACD (12, 26, 9): 1.40, 1.47, -0.07, ,
 
 Date: 2024-01-05, Open: 136.75, Close: 135.73, High: 137.16, Low: 135.15, Volume: 22506000.00, SMA 10: 139.29, EMA 20: 137.09, RSI 14: 47.62, MACD (12, 26, 9): 1.11, 1.39, -0.29, ,
-
+```
 
 ## Supported Publishers
 
-Implementation is available for a number of sites that offer Free Tier. New Publishers can be added, your contribution is welcome.  Additional details can be found in [Publishers.md](https://github.com/danrusei/market-data/blob/main/Publishers.md) file. So far the following are supported:
+Implementation is available for several sites that offer also Free Tier, besides the paid subscriptions. Additional details can be found in [Publishers.md](https://github.com/danrusei/market-data/blob/main/Publishers.md) file. 
+
+So far the following are supported:
 
 * [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)
-* [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to) - may not work unless you use the paid subscribtions
+* [x] [Polygon.io](https://polygon.io/docs/stocks/getting-started)
+* [] [Yahoo Finance](https://finance.yahoo.com/)
+* [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to) - may not work unless a paid subscribtions is used
 
-Alternative providers, to be added:
+New Publishers can be added (as [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage), [Marketstack](https://marketstack.com/documentation#historical_data) and others).
 
-* [] [Polygon](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
-* [] [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage)
-* [] [Marketstack](https://marketstack.com/documentation#historical_data)
-* [] [Tradier](https://documentation.tradier.com/brokerage-api/markets/get-history)
-* [] [Yahoo Finance site - maybe?](https://finance.yahoo.com/)
-* [] [Stook parse site- maybe?](https://stooq.com/q/d/?s=aapl.us&i=d&d1=20230907&d2=20240229)
-
+Contribution is welcome, if you need other Publishers(source sites) raise a PR or create an issue.
 
 ## Supported Market Technical Indicators
 
@@ -107,7 +106,7 @@ Alternative providers, to be added:
 * [x] [Stochastic Oscillator](https://www.investopedia.com/terms/s/stochasticoscillator.asp)
 * [x] [Moving Average Convergence/Divergence (MACD)](https://www.investopedia.com/terms/m/macd.asp)
 
-Contribution is welcomed, if you need other indicators raise a PR or create an issue.
+Contribution is welcome,  if you need other indicators raise a PR or create an issue.
 
 
 ## For development

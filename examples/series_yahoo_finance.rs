@@ -1,23 +1,16 @@
 use anyhow::Result;
-use lazy_static::lazy_static;
-use market_data::{EnhancedMarketSeries, Interval, MarketClient, Twelvedata};
-use std::env::var;
-//use std::fs::File;
-
-lazy_static! {
-    static ref TOKEN: String =
-        var("Twelvedata_TOKEN").expect("Twelvedata_TOKEN env variable is required");
-}
+use market_data::{EnhancedMarketSeries, Interval, MarketClient, YahooFin, YahooRange};
 
 fn main() -> Result<()> {
     // Select a Publisher from the available ones
-    let mut site = Twelvedata::new(TOKEN.to_string());
+    let mut site = YahooFin::new();
 
     // configure to retrieve Daily, Weekly or Intraday series, check the available methods for each publisher
-    // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
+    // interval - use exported enum Interval
+    // range - use exported enum YahooRange that alllows only the values supported by Yahoo
     // multiple requests can be added
-    site.weekly_series("GOOGL", 40);
-    site.intraday_series("MSFT", 40, Interval::Hour2)?;
+    site.weekly_series("GOOGL", YahooRange::Year1);
+    site.intraday_series("MSFT", Interval::Hour1, YahooRange::Day5)?;
 
     // create the MarketClient
     let mut client = MarketClient::new(site);
@@ -34,7 +27,7 @@ fn main() -> Result<()> {
     });
 
     // you can reuse the client to download additional series
-    client.site.daily_series("GOOGL", 300);
+    client.site.daily_series("GOOGL", YahooRange::Month6);
 
     // pattern with consuming the client, the client can't be reused for configuring new series
     let data2 = client.create_endpoint()?.get_data()?.transform_data();

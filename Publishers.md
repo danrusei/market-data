@@ -2,7 +2,7 @@
 
 ## [Twelvedata](https://twelvedata.com/docs#time-series)
 
-An API key is required, that can be obtain for free by signing up on the site.
+An API key is required, that can be obtained for free by signing up on the site.
 
 Basic Free Account offer 800 API credits per day & 8 credits pe minute, however check their site for latest information. A link that exaplain the [credits calculation](https://support.twelvedata.com/en/articles/5615854-credits).
 
@@ -24,9 +24,9 @@ The available methods:
 
 Example
 ```rust
-site.daily_series("AAPL".to_string(), 100);
-site.intraday_series("MSFT".to_string(), 200, Interval::Hour1);
-site.weekly_series("GOOGL".to_string(), 50); 
+site.daily_series("AAPL", 100);
+site.intraday_series("MSFT", 200, Interval::Hour1);
+site.weekly_series("GOOGL", 50); 
 ```
 
 **output_size** - Supports values in the range from 1 to 5000 , default is 30.
@@ -37,7 +37,7 @@ Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/s
 
 ## [Alpha Vantage](https://www.alphavantage.co/documentation/#time-series-data)
 
-An API key is required, that can be obtain for free by [signing up on the site](https://www.alphavantage.co/support/#api-key).
+An API key is required, that can be obtained for free by [signing up on the site](https://www.alphavantage.co/support/#api-key).
 
 Free stock API service covering the majority of the datasets for up to **25 requests per day**.  To target a larger API call volume, requires a premium membership.
 
@@ -59,9 +59,9 @@ The available methods:
 
 Example:
 ```rust
-site.daily_series("AAPL".to_string(), OutputSize::Compact);
-site.weekly_series("GOOGL".to_string(), OutputSize::Compact);
-site.intraday_series("MSFT".to_string(), OutputSize::Compact, Interval::Min60); -- not yet supported
+site.daily_series("AAPL", OutputSize::Compact);
+site.weekly_series("GOOGL", OutputSize::Compact);
+site.intraday_series("MSFT", OutputSize::Compact, Interval::Min60); -- not yet supported
 ```
 
 **output_size** :
@@ -72,6 +72,48 @@ site.intraday_series("MSFT".to_string(), OutputSize::Compact, Interval::Min60); 
 **interval** - for intraday series: 1min, 5min, 15min, 30min, 60min
 
 Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_alphavantage.rs)
+
+## [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
+
+An API key is required, that can be obtained for free by [signing up on the site](https://polygon.io/).
+
+It offers a [Free Basic plan](https://polygon.io/pricing), that offers 5 API Calls / minute with 2 Years Historical Data End of Day Data. For increased number of API calls, 15-minute delayed data and longer timespan for historical data a paid subscription is needed.
+
+[The base aggregates are minute and daily bars](https://polygon.io/blog/aggs-api-updates), while a request for any other resolution results in those bars being calculated from one of the base aggregates.
+The following illustrates the mappings of requested resolutions to their corresponding base aggregate.
+
+The `limit` parameter, limits the number of base aggregates queried to create the aggregate results. Max 50000 and Default 5000. Read more about how limit is used to calculate aggregate results [in the article](https://polygon.io/blog/aggs-api-updates).
+
+| Minute |	Day |
+|--------|------|
+|Minute, Hour |	Day, Week, Month, Quarter, Year |
+
+### Build request
+
+Select Alpha Vantage publisher:
+
+```rust
+let mut site = AlphaVantage::new(TOKEN.to_string());
+```
+
+For the requested instrument select the time series. Multiple can be added. 
+The available methods:
+
+* *intraday_series (symbol: String, from_date: String, to_date: String, interval: Interval, limit: i32)* 
+* *daily_series (symbol: String, from_date: String, to_date: String, limit: i32)*
+* *weekly_series (symbol: String, from_date: String, to_date: String, limit: i32)*
+* *monthly_series (symbol: String, from_date: String, to_date: String, limit: i32)*
+
+Example:
+
+```rust
+site.daily_series("GOOGL", "2024-01-01", "2024-03-01", 200);
+site.weekly_series("GOOGL", "2023-01-07", "2024-01-07", 1000);
+site.intraday_series("MSFT", "2024-03-06", "2024-03-06", Interval::Min30, 2000)?;
+```
+
+**interval** - Interval::Min1, Interval::Min5, Interval::Min15, Interval::Min30, Interval::Hour1, Interval::Hour2, Interval::Hour4
+**limit** -- read the above mention
 
 ## [IEX Cloud](https://iexcloud.io/docs/api/#historical-prices) 
 
@@ -91,7 +133,7 @@ The available methods:
 Example:
 
 ```rust
-site.daily_series("AAPL".to_string(), "3m".to_string());
+site.daily_series("AAPL", "3m".to_string());
 ```
 
 **range** - supported values : 1m (default), 3m, 6m, ytd, 1y, 2y, 5y, max (available data up to 15 years)

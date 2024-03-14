@@ -2,7 +2,7 @@
 
 A Rust lib to fetch & enhance historical time-series stock market data.
 
-Default is the Sync version that is using [ureq](https://crates.io/crates/ureq) as http client. An Async version using [reqwest](https://crates.io/crates/reqwest) http client can be enabled using the "use-async" feature.
+Default is the Sync version that is using [ureq](https://crates.io/crates/ureq) http client. An Async version using [reqwest](https://crates.io/crates/reqwest) http client can be enabled using the "use-async" feature.
 
 To enable async feature:
 
@@ -20,7 +20,7 @@ let mut site = Twelvedata::new(TOKEN.to_string());
 // output_size is mandatory for Twelvedata - and supports values in the range from 1 to 5000 , default is 30.
 // multiple requests can be added
 site.weekly_series("GOOGL", 40);
-site.daily_series("GOOGL", 30);
+site.intraday_series("MSFT", 40, Interval::Hour2)?;
 
 // create the MarketClient
 let mut client = MarketClient::new(site);
@@ -37,9 +37,7 @@ data.iter().for_each(|output| match output {
 });
 
 // the client can be reused for additional series
-client
-    .site
-    .intraday_series("MSFT", 200, Interval::Hour2)?;
+client.site.daily_series("GOOGL", 300);
 
 // the consuming the client pattern, the client can't be reused for configuring new series
 let data2 = client.create_endpoint()?.get_data()?.transform_data();
@@ -91,7 +89,7 @@ So far the following are supported:
 * [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
 * [x] [Twelvedata](https://twelvedata.com/docs#time-series)
 * [x] [Polygon.io](https://polygon.io/docs/stocks/getting-started)
-* [] [Yahoo Finance](https://finance.yahoo.com/)
+* [x] [Yahoo Finance](https://finance.yahoo.com/)
 * [x] [Iex cloud](https://iexcloud.io/docs/api/#rest-how-to) - may not work unless a paid subscribtions is used
 
 New Publishers can be added (as [Nasdaq Data Link - WIKIP](https://data.nasdaq.com/databases/WIKIP#usage), [Marketstack](https://marketstack.com/documentation#historical_data) and others).

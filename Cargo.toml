@@ -1,6 +1,6 @@
 [package]
 name = "market-data"
-version = "0.3.2"
+version = "0.3.3"
 description = "A Rust lib to fetch & enhance historical time-series stock market data"
 keywords = ["stock_time-series", "market-data", "equities_data"]
 authors = ["Dan Rusei <dan.rusei@gmail.com>"]

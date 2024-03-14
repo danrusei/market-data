@@ -23,7 +23,7 @@ pub use publishers::{
 };
 
 mod indicators;
-pub use indicators::EnhancedMarketSeries;
+pub use indicators::{EnhancedMarketSeries, Indicators};
 
 pub mod errors;
 pub use errors::MarketError;

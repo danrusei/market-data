@@ -51,34 +51,54 @@ impl<T: Publisher> MarketClient<T> {
 /// Holds the parsed data from Publishers
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MarketSeries {
+    /// holds symbol like: "GOOGL"
     pub symbol: String,
+    /// inteval from intraday to monthly
     pub interval: Interval,
+    /// the original series downloaded and parsed from publishers
     pub data: Vec<Series>,
 }
 
 /// Series part of the MarketSeries
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Series {
+    /// the date of the stock price
     pub date: NaiveDate,
+    /// the opening price of the stock for the selected interval
     pub open: f32,
+    /// the closing price of the stock for the selected interval
     pub close: f32,
+    /// the highest price of the stock for the selected interval
     pub high: f32,
+    /// the lowest price of the stock for the selected interval
     pub low: f32,
+    /// the number of shares traded in the selected interval
     pub volume: f32,
 }
 
+/// The time interval between two data points
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub enum Interval {
+    /// 1 minute interval
     Min1,
+    /// 5 minutes interval
     Min5,
+    /// 15 minutes interval
     Min15,
+    /// 30 minutes interval
     Min30,
+    /// 1 hour interval
     Hour1,
+    /// 2 hours interval
     Hour2,
+    /// 4 hours interval
     Hour4,
+    /// daily interval
     #[default]
     Daily,
+    /// weekly interval
     Weekly,
+    /// monthly interval
     Monthly,
 }
 

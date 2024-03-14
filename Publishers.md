@@ -1,6 +1,12 @@
 # Supported Publishers (time-series data only)
 
-## [Twelvedata](https://twelvedata.com/docs#time-series)
+* [Twelvedata](#twelvedata)
+* [Alpha Vantage](#alphavantage)
+* [Poligon.io](#polygon_io)
+* [IexCloud](#iex-cloud)
+* [Yahoo Finance](#yahoo-finance)
+
+## [Twelvedata](https://twelvedata.com/docs#time-series)<a name="twelvedata"></a>
 
 An API key is required, that can be obtained for free by signing up on the site.
 
@@ -35,7 +41,7 @@ site.weekly_series("GOOGL", 50);
 
 Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_twelvedata.rs)
 
-## [Alpha Vantage](https://www.alphavantage.co/documentation/#time-series-data)
+## [Alpha Vantage](https://www.alphavantage.co/documentation/#time-series-data)<a name="alphavantage"></a>
 
 An API key is required, that can be obtained for free by [signing up on the site](https://www.alphavantage.co/support/#api-key).
 
@@ -73,7 +79,7 @@ site.intraday_series("MSFT", OutputSize::Compact, Interval::Min60); -- not yet s
 
 Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_alphavantage.rs)
 
-## [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
+## [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)<a name="polygon_io"></a>
 
 An API key is required, that can be obtained for free by [signing up on the site](https://polygon.io/).
 
@@ -90,10 +96,10 @@ The `limit` parameter, limits the number of base aggregates queried to create th
 
 ### Build request
 
-Select Alpha Vantage publisher:
+Select Polygon_io publisher:
 
 ```rust
-let mut site = AlphaVantage::new(TOKEN.to_string());
+let mut site = Polygon::new(APIKEY.to_string());
 ```
 
 For the requested instrument select the time series. Multiple can be added. 
@@ -115,7 +121,9 @@ site.intraday_series("MSFT", "2024-03-06", "2024-03-06", Interval::Min30, 2000)?
 **interval** - Interval::Min1, Interval::Min5, Interval::Min15, Interval::Min30, Interval::Hour1, Interval::Hour2, Interval::Hour4
 **limit** -- read the above mention
 
-## [IEX Cloud](https://iexcloud.io/docs/api/#historical-prices) 
+Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_polygon_io.rs)
+
+## [IEX Cloud](https://iexcloud.io/docs/api/#historical-prices)<a name="iex-cloud"></a> 
 
 Their API and the subscription model has changed, therefeore the below examples may not work without a paid subscribtion !
 
@@ -139,3 +147,39 @@ site.daily_series("AAPL", "3m".to_string());
 **range** - supported values : 1m (default), 3m, 6m, ytd, 1y, 2y, 5y, max (available data up to 15 years)
 
 Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_iexcloud.rs)
+
+## [Yahoo Finance](https://finance.yahoo.com/)<a name="yahoo-finance"></a>
+
+The Yahoo Finance API is free to use for personal projects. However, commercial usage of the API requires a paid subscription. This means that developers working on commercial projects will need to pay for a Yahoo Finance API subscription.
+
+The Yahoo Finance API is updated once per day. Does not offer real-time data as per the moment I'm writing this.
+
+### Build request
+
+Select Alpha Vantage publisher:
+
+```rust
+let mut site = YahooFin::new();
+```
+
+For the requested instrument select the time series. Multiple can be added. 
+The available methods:
+
+* *intraday_series (symbol: String, interval: Interval, range: YahooRange)* 
+* *daily_series (symbol: String, range: YahooRange)*
+* *weekly_series (symbol: String, range: YahooRange)*
+* *monthly_series (symbol: String, range: YahooRange)*
+
+Example:
+
+```rust
+site.daily_series("GOOGL", YahooRange::Month6);
+site.weekly_series("GOOGL", YahooRange::Year1);
+site.intraday_series("MSFT", Interval::Hour1, YahooRange::Day5)?;
+```
+
+**Interval** - used for intraday series: Interval::Min1, Interval::Min5, Interval::Min15, Interval::Min30, Interval::Hour1, Interval::Hour2, Interval::Hour4
+
+**YahooRange** - the calid ranges are: YahooRange:Day1, YahooRange:Day5, YahooRange:Month1, YahooRange:Month3,YahooRange:Month6, YahooRange:Year1, YahooRange:Year2, YahooRange:Year5, YahooRange:Year10, YahooRange:Ytd, YahooRange:Max,
+
+Check The [Example](https://github.com/danrusei/market-data/blob/main/examples/series_yahoo_finance.rs)

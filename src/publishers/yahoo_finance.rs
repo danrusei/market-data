@@ -306,7 +306,7 @@ fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketS
 
         for timestamp in data.timestamp.iter() {
             // Create a NaiveDateTime from the Unix timestamp
-            let datetime = DateTime::from_timestamp_millis(timestamp.clone()).ok_or(
+            let datetime = DateTime::from_timestamp(timestamp.clone(), 0).ok_or(
                 MarketError::ParsingError(format!("Unable to parse the timestamp")),
             );
 

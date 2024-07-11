@@ -95,7 +95,7 @@ impl YahooFin {
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: impl Into<String>, range: YahooRange) -> () {
+    pub fn daily_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
         self.interval.push(Interval::Daily);
         self.requests.push(YahooRequest {
             symbol: symbol.into(),
@@ -105,7 +105,7 @@ impl YahooFin {
     }
 
     /// Request for weekly series
-    pub fn weekly_series(&mut self, symbol: impl Into<String>, range: YahooRange) -> () {
+    pub fn weekly_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
         self.interval.push(Interval::Weekly);
         self.requests.push(YahooRequest {
             symbol: symbol.into(),
@@ -115,7 +115,7 @@ impl YahooFin {
     }
 
     /// Request for monthly series
-    pub fn monthly_series(&mut self, symbol: impl Into<String>, range: YahooRange) -> () {
+    pub fn monthly_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
         self.interval.push(Interval::Monthly);
         self.requests.push(YahooRequest {
             symbol: symbol.into(),
@@ -132,13 +132,12 @@ impl Publisher for YahooFin {
             .requests
             .iter()
             .map(|request| {
-                let constructed_url = base_url
+                base_url
                     .join(&format!(
                         "{}?metrics=high&interval={}&range={}",
                         request.symbol, request.interval, request.range,
                     ))
-                    .unwrap();
-                constructed_url
+                    .unwrap()
             })
             .collect();
         // self.requests have to be consumed once used for creating the endpoints
@@ -277,11 +276,11 @@ struct Indicators {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Quote {
-    volume: Vec<i64>,
-    close: Vec<f64>,
-    low: Vec<f64>,
-    open: Vec<f64>,
-    high: Vec<f64>,
+    volume: Vec<Option<i64>>,
+    close: Vec<Option<f64>>,
+    low: Vec<Option<f64>>,
+    open: Vec<Option<f64>>,
+    high: Vec<Option<f64>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -306,8 +305,8 @@ fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketS
 
         for timestamp in data.timestamp.iter() {
             // Create a NaiveDateTime from the Unix timestamp
-            let datetime = DateTime::from_timestamp(timestamp.clone(), 0).ok_or(
-                MarketError::ParsingError(format!("Unable to parse the timestamp")),
+            let datetime = DateTime::from_timestamp(*timestamp, 0).ok_or(
+                MarketError::ParsingError("Unable to parse the timestamp".to_string()),
             );
 
             match datetime {
@@ -325,20 +324,19 @@ fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketS
         }
 
         for series in data.indicators.quote.iter() {
-            for j in 1..series.open.len() - 1 {
-                let open: f32 = series.open[j] as f32;
-                let close: f32 = series.close[j] as f32;
-                let high: f32 = series.high[j] as f32;
-                let low: f32 = series.low[j] as f32;
-                let volume: f32 = series.volume[j] as f32;
-
+            for (j, date) in timestamps
+                .iter()
+                .enumerate()
+                .take(series.open.len() - 1)
+                .skip(1)
+            {
                 data_series.push(Series {
-                    date: timestamps[j],
-                    open,
-                    close,
-                    high,
-                    low,
-                    volume,
+                    date: *date,
+                    open: series.open[j].unwrap_or_default() as _,
+                    close: series.close[j].unwrap_or_default() as _,
+                    high: series.high[j].unwrap_or_default() as _,
+                    low: series.low[j].unwrap_or_default() as _,
+                    volume: series.volume[j].unwrap_or_default() as _,
                 })
             }
 

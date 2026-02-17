@@ -135,8 +135,7 @@ impl Publisher for Twelvedata {
                 MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
             })?;
 
-            let date = if prices.meta.interval.contains("min")
-                || prices.meta.interval.contains('h')
+            let date = if prices.meta.interval.contains("min") || prices.meta.interval.contains('h')
             {
                 NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(|e| {
                     MarketError::ParsingError(format!("Unable to parse datetime: {}", e))

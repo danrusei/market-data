@@ -16,7 +16,9 @@ async fn main() -> Result<()> {
     let client = MarketClient::new(site);
 
     // Create a request
-    let request = client.site.daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
+    let request = client
+        .site
+        .daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
 
     // Fetch the data
     let data = client.fetch(request).await?;

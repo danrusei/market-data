@@ -140,7 +140,7 @@ impl Publisher for YahooFin {
             })?;
 
             let quote = &result.indicators.quote[0];
-            
+
             // Check if values exist for this timestamp
             let open = quote.open[i];
             let high = quote.high[i];
@@ -148,7 +148,8 @@ impl Publisher for YahooFin {
             let close = quote.close[i];
             let volume = quote.volume[i];
 
-            if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume) {
+            if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume)
+            {
                 data_series.push(Series {
                     date: datetime.date_naive(),
                     open: o as f32,

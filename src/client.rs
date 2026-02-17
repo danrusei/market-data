@@ -6,50 +6,31 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
 
-/// MarketClient holds the Publisher
+/// MarketClient holds the Publisher and reqwest::Client
 pub struct MarketClient<T: Publisher> {
     pub site: T,
+    inner: reqwest::Client,
 }
 
 impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
-        MarketClient { site }
+        Self {
+            site,
+            inner: reqwest::Client::new(),
+        }
     }
 
-    /// Creates the final query URL for the selected Provider
-    pub fn create_endpoint(mut self) -> MarketResult<Self> {
-        self.site.create_endpoint()?;
-        Ok(self)
-    }
-
-    /// Download the data series in the Provider format
-    #[cfg(feature = "use-async")]
-    pub async fn get_data(mut self) -> MarketResult<Self> {
-        self.site.get_data().await?;
-        Ok(self)
-    }
-
-    /// Download the data series in the Provider format
-    #[cfg(feature = "use-sync")]
-    pub fn get_data(mut self) -> MarketResult<Self> {
-        self.site.get_data()?;
-        Ok(self)
-    }
-
-    /// Write the downloaded data to anything that implements std::io::Write , like File, TcpStream, Stdout, etc
-    pub fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        self.site.to_writer(writer)?;
-        Ok(())
-    }
-
-    /// Transform the downloaded Provider series into MarketSeries format
-    pub fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
-        self.site.transform_data()
+    /// Fetches the data for a single request
+    pub async fn fetch(&self, request: T::Request) -> MarketResult<MarketSeries> {
+        let url = self.site.create_endpoint(&request)?;
+        let response = self.inner.get(url).send().await?;
+        let body = response.text().await?;
+        self.site.transform_data(body, &request)
     }
 }
 
 /// Holds the parsed data from Publishers
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MarketSeries {
     /// holds symbol like: "GOOGL"
     pub symbol: String,
@@ -60,7 +41,7 @@ pub struct MarketSeries {
 }
 
 /// Series part of the MarketSeries
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Series {
     /// the date of the stock price
     pub date: NaiveDate,
@@ -184,6 +165,6 @@ impl std::str::FromStr for Interval {
 
 impl From<String> for Interval {
     fn from(s: String) -> Self {
-        Interval::from_str(&s).unwrap_or_else(|_| Interval::Daily)
+        Interval::from_str(&s).unwrap_or(Interval::Daily)
     }
 }

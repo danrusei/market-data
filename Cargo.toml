@@ -1,6 +1,6 @@
 [package]
 name = "market-data"
-version = "0.3.3"
+version = "0.4.0"
 description = "A Rust lib to fetch & enhance historical time-series stock market data"
 keywords = ["stock_time-series", "market-data", "equities_data"]
 authors = ["Dan Rusei <dan.rusei@gmail.com>"]
@@ -11,54 +11,35 @@ license = "Apache-2.0"
 edition = "2021"
 exclude = [".github/*",]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = ["use-sync"]
-use-sync = ["ureq"]
-use-async = ["reqwest"]
-
 [dependencies]
-chrono = {version = "0.4.34", features = ["serde"] }
-serde = { version = "1.0.197", features = ["derive"] }
-serde_json = "1.0.114"
-thiserror = "1.0.57"
-url = "2.5.0"
-
-ureq = {version="2.9.6", optional = true, features = ["json"] }
-reqwest = {version="0.11.24", optional = true, features = ["json"] }
+chrono = { version = "0.4.43", features = ["serde"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+url = "2.5"
+reqwest = { version = "0.13", features = ["json"] }
 
 [dev-dependencies]
-anyhow = "1.0.80"
+anyhow = "1.0.101"
 lazy_static = "1.4.0"
 tokio = { version = "1.0", features = ["full"] }
 
 [[example]]
 name = "series_alphavantage"
 path = "examples/series_alphavantage.rs"
-required-features = ["use-sync"]
 
 [[example]]
 name = "series_twelvedata"
 path = "examples/series_twelvedata.rs"
-required-features = ["use-sync"]
-
-[[example]]
-name = "async_series_twelvedata"
-path = "examples/async_series_twelvedata.rs"
-required-features = ["use-async"]
 
 [[example]]
 name = "series_finnhub"
 path = "examples/series_finnhub.rs"
-required-features = ["use-sync"]
 
 [[example]]
 name = "series_polygon_io"
 path = "examples/series_polygon_io.rs"
-required-features = ["use-sync"]
 
 [[example]]
 name = "series_yahoo_finance"
 path = "examples/series_yahoo_finance.rs"
-required-features = ["use-sync"]

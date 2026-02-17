@@ -26,6 +26,4 @@ mod indicators;
 pub use indicators::{EnhancedMarketSeries, Indicators};
 
 pub mod errors;
-pub use errors::MarketError;
-
-mod rest_call;
+pub use errors::{MarketError, MarketResult};

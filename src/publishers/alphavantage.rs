@@ -1,26 +1,12 @@
 //! Fetch time series stock data from [AlphaVantage](https://www.alphavantage.co/documentation/#time-series-data)
-///
-/// Claim your [API Key](https://www.alphavantage.co/support/#api-key)
-//
-/// Example Daily requests:
-/// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=demo
-/// https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&outputsize=full&apikey=demo
-///
-/// Example intraday requests:
-/// The API will return the most recent 100 intraday OHLCV bars by default when the outputsize parameter is not set
-/// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&apikey=demo
-/// Query the most recent full 30 days of intraday data by setting outputsize=full
-/// https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min&outputsize=full&apikey=demo
+
 use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use url::Url;
 
 use crate::{
     client::{Interval, MarketSeries, Series},
     errors::MarketResult,
     publishers::Publisher,
-    rest_call::Client,
     MarketError,
 };
 
@@ -28,17 +14,12 @@ const BASE_URL: &str = "https://www.alphavantage.co/";
 
 /// Fetch time series stock data from [AlphaVantage](https://www.alphavantage.co/documentation/#time-series-data),
 /// implements Publisher trait
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AlphaVantage {
     token: String,
-    requests: Vec<AVRequest>,
-    endpoints: Vec<url::Url>,
-    data_intraday: Vec<AlphaIntradayPrices>,
-    data_daily: Vec<AlphaDailyPrices>,
-    data_wm: Vec<AlphaWMPrices>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct AVRequest {
     symbol: String,
     function: Function,
@@ -46,35 +27,19 @@ pub struct AVRequest {
     output_size: OutputSize,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum Function {
-    // https://www.alphavantage.co/documentation/#intraday
-    TimeSeriesIntraday,
-    // https://www.alphavantage.co/documentation/#daily
+    Intraday,
     #[default]
-    TimeSeriesDaily,
-    //https://www.alphavantage.co/documentation/#dailyadj
-    #[allow(dead_code)]
-    TimeSeriesDailyAdjusted,
-    //https://www.alphavantage.co/documentation/#weekly
-    TimeSeriesWeekly,
-    //https://www.alphavantage.co/documentation/#weeklyadj
-    #[allow(dead_code)]
-    TimeSeriesWeeklyAdjusted,
-    //https://www.alphavantage.co/documentation/#monthly
-    TimeSeriesMonthly,
-    //https://www.alphavantage.co/documentation/#monthlyadj
-    #[allow(dead_code)]
-    TimeSeriesMonthlyAdjusted,
+    Daily,
+    Weekly,
+    Monthly,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub enum OutputSize {
-    // compact returns only the latest 100 data points
     #[default]
     Compact,
-    // full returns the full-length time series of 20+ years of historical data on Daily requests
-    // and trailing 30 days of the most recent intraday for Intraday Series
     Full,
 }
 
@@ -83,401 +48,165 @@ impl AlphaVantage {
     pub fn new(token: impl Into<String>) -> Self {
         AlphaVantage {
             token: token.into(),
-            ..Default::default()
         }
     }
 
     /// Request for intraday series
-    /// it supports only the following intervals: 1min, 5min, 15min, 30min, 60min
     pub fn intraday_series(
-        &mut self,
+        &self,
         symbol: impl Into<String>,
         output_size: OutputSize,
         interval: Interval,
-    ) -> MarketResult<()> {
-        let function = Function::TimeSeriesIntraday;
-        let interval = match interval {
+    ) -> MarketResult<AVRequest> {
+        let interval_str = match interval {
             Interval::Min1 => "1min".to_string(),
             Interval::Min5 => "5min".to_string(),
             Interval::Min15 => "15min".to_string(),
             Interval::Min30 => "30min".to_string(),
             Interval::Hour1 => "60min".to_string(),
-            _ => Err(MarketError::UnsuportedInterval(format!(
-                "{} interval is not supported by AlphaVantage",
-                interval
-            )))?,
+            _ => {
+                return Err(MarketError::UnsuportedInterval(format!(
+                    "{} interval is not supported by AlphaVantage",
+                    interval
+                )))
+            }
         };
-        self.requests.push(AVRequest {
+        Ok(AVRequest {
             symbol: symbol.into(),
-            function,
-            interval: Some(interval),
+            function: Function::Intraday,
+            interval: Some(interval_str),
             output_size,
-        });
-        Ok(())
+        })
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
-        let function = Function::TimeSeriesDaily;
-        self.requests.push(AVRequest {
+    pub fn daily_series(&self, symbol: impl Into<String>, output_size: OutputSize) -> AVRequest {
+        AVRequest {
             symbol: symbol.into(),
-            function,
+            function: Function::Daily,
             interval: None,
             output_size,
-        });
+        }
     }
 
     /// Request for weekly series
-    pub fn weekly_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
-        let function = Function::TimeSeriesWeekly;
-        self.requests.push(AVRequest {
+    pub fn weekly_series(&self, symbol: impl Into<String>, output_size: OutputSize) -> AVRequest {
+        AVRequest {
             symbol: symbol.into(),
-            function,
+            function: Function::Weekly,
             interval: None,
             output_size,
-        });
+        }
     }
 
     /// Request for monthly series
-    pub fn monthly_series(&mut self, symbol: impl Into<String>, output_size: OutputSize) -> () {
-        let function = Function::TimeSeriesMonthly;
-        self.requests.push(AVRequest {
+    pub fn monthly_series(&self, symbol: impl Into<String>, output_size: OutputSize) -> AVRequest {
+        AVRequest {
             symbol: symbol.into(),
-            function,
+            function: Function::Monthly,
             interval: None,
             output_size,
-        });
+        }
     }
 }
 
 impl Publisher for AlphaVantage {
-    fn create_endpoint(&mut self) -> MarketResult<()> {
+    type Request = AVRequest;
+
+    fn create_endpoint(&self, request: &Self::Request) -> MarketResult<Url> {
         let base_url = Url::parse(BASE_URL)?;
-        self.endpoints = self
-            .requests
-            .iter()
-            .map(|request| {
-                let constructed_url = match request.function {
-                    Function::TimeSeriesIntraday => {
-                        base_url
-                        .join(&format!(
-                            "query?function={}&symbol={}&interval={}&outputsize={}&datatype=json&apikey={}",
-                            request.function.to_string(),
-                            request.symbol,
-                            request.interval.as_ref().unwrap(),
-                            request.output_size.to_string(),
-                            self.token
-                        ))
-                        .unwrap()
-                    }
-                    _ => base_url
-                        .join(&format!(
-                            "query?function={}&symbol={}&outputsize={}&datatype=json&apikey={}",
-                            request.function.to_string(),
-                            request.symbol,
-                            request.output_size.to_string(),
-                            self.token
-                        ))
-                        .unwrap(),
-                };
-                constructed_url
-            })
-            .collect();
-
-        Ok(())
-    }
-
-    #[cfg(feature = "use-sync")]
-    fn get_data(&mut self) -> MarketResult<()> {
-        let rest_client = Client::new();
-        for (i, endpoint) in self.endpoints.iter().enumerate() {
-            let response = rest_client.get_data(endpoint)?;
-            let body = response.into_string()?;
-
-            match self.requests[i].function {
-                Function::TimeSeriesIntraday => {
-                    let prices: AlphaIntradayPrices = serde_json::from_str(&body)?;
-                    self.data_intraday.push(prices);
-                }
-                Function::TimeSeriesDaily | Function::TimeSeriesDailyAdjusted => {
-                    let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
-                    self.data_daily.push(prices);
-                }
-                Function::TimeSeriesWeekly
-                | Function::TimeSeriesWeeklyAdjusted
-                | Function::TimeSeriesMonthly
-                | Function::TimeSeriesMonthlyAdjusted => {
-                    let prices: AlphaWMPrices = serde_json::from_str(&body)?;
-                    self.data_wm.push(prices);
-                }
+        let mut url = base_url.join("query")?;
+        {
+            let mut pairs = url.query_pairs_mut();
+            pairs.append_pair("function", &request.function.to_string());
+            pairs.append_pair("symbol", &request.symbol);
+            pairs.append_pair("outputsize", &request.output_size.to_string().to_lowercase());
+            pairs.append_pair("datatype", "json");
+            pairs.append_pair("apikey", &self.token);
+            if let Some(interval) = &request.interval {
+                pairs.append_pair("interval", interval);
             }
         }
-
-        // self.requests have to be consumed once used for creating the endpoints
-        self.requests.clear();
-        // self.endpoints have to be consumed once the data was downloaded for requested URL
-        self.endpoints.clear();
-
-        Ok(())
+        Ok(url)
     }
 
-    #[cfg(feature = "use-async")]
-    async fn get_data(&mut self) -> MarketResult<()> {
-        let client = Client::new();
-        for (i, endpoint) in self.endpoints.iter().enumerate() {
-            let response = client.get_data(endpoint).await?;
-            let body = response.text().await?;
+    fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
+        // AlphaVantage returns dynamic keys for time series data depending on the interval/function.
+        // We use a generic approach with serde_json::Value or multiple structs.
+        
+        let mut data_series: Vec<Series> = Vec::new();
+        let v: serde_json::Value = serde_json::from_str(&data)?;
 
-            match self.requests[i].function {
-                Function::TimeSeriesIntraday => {
-                    let prices: AlphaIntradayPrices = serde_json::from_str(&body)?;
-                    self.data_intraday.push(prices);
-                }
-                Function::TimeSeriesDaily | Function::TimeSeriesDailyAdjusted => {
-                    let prices: AlphaDailyPrices = serde_json::from_str(&body)?;
-                    self.data_daily.push(prices);
-                }
-                Function::TimeSeriesWeekly
-                | Function::TimeSeriesWeeklyAdjusted
-                | Function::TimeSeriesMonthly
-                | Function::TimeSeriesMonthlyAdjusted => {
-                    let prices: AlphaWMPrices = serde_json::from_str(&body)?;
-                    self.data_wm.push(prices);
-                }
-            }
+        // Find the key that contains "Time Series"
+        let series_key = v.as_object()
+            .and_then(|obj| obj.keys().find(|k| k.contains("Time Series")))
+            .ok_or_else(|| MarketError::DownloadedData("Time Series data not found in response".to_string()))?;
+
+        let series_data = v.get(series_key)
+            .and_then(|s| s.as_object())
+            .ok_or_else(|| MarketError::DownloadedData("Invalid Time Series data format".to_string()))?;
+
+        for (date_str, values) in series_data {
+            let open: f32 = values.get("1. open").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
+                .ok_or_else(|| MarketError::ParsingError("Unable to parse Open".to_string()))?;
+            let high: f32 = values.get("2. high").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
+                .ok_or_else(|| MarketError::ParsingError("Unable to parse High".to_string()))?;
+            let low: f32 = values.get("3. low").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
+                .ok_or_else(|| MarketError::ParsingError("Unable to parse Low".to_string()))?;
+            let close: f32 = values.get("4. close").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
+                .ok_or_else(|| MarketError::ParsingError("Unable to parse Close".to_string()))?;
+            let volume: f32 = values.get("5. volume").and_then(|v| v.as_str()).and_then(|s| s.parse().ok())
+                .ok_or_else(|| MarketError::ParsingError("Unable to parse Volume".to_string()))?;
+
+            let date = if date_str.len() > 10 {
+                 NaiveDate::parse_from_str(&date_str[..10], "%Y-%m-%d").map_err(|e| MarketError::ParsingError(e.to_string()))?
+            } else {
+                 NaiveDate::parse_from_str(date_str, "%Y-%m-%d").map_err(|e| MarketError::ParsingError(e.to_string()))?
+            };
+
+            data_series.push(Series {
+                date,
+                open,
+                close,
+                high,
+                low,
+                volume,
+            });
         }
 
-        // self.requests have to be consumed once used for creating the endpoints
-        self.requests.clear();
-        // self.endpoints have to be consumed once the data was downloaded for requested URL
-        self.endpoints.clear();
+        data_series.sort_by_key(|item| item.date);
 
-        Ok(())
-    }
-
-    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        serde_json::to_writer(writer, &self.data_daily).map_err(|err| {
-            MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
-        })?;
-        Ok(())
-    }
-
-    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
-        let mut result: Vec<MarketResult<MarketSeries>> = Vec::new();
-
-        for intra_data in self.data_intraday.iter() {
-            let mut market_series: Vec<Series> = Vec::with_capacity(intra_data.time_series.len());
-
-            for (date, series) in intra_data.time_series.iter() {
-                match transform(date, series) {
-                    Ok(series) => market_series.push(series),
-                    Err(err) => {
-                        result.push(Err(err));
-                        break;
-                    }
-                }
-            }
-
-            // sort the series by date
-            market_series.sort_by_key(|item| item.date);
-
-            result.push(Ok(MarketSeries {
-                symbol: intra_data.meta_data.symbol.clone(),
-                interval: intra_data.meta_data.interval.clone().into(),
-                data: market_series,
-            }))
-        }
-
-        for daily_data in self.data_daily.iter() {
-            let mut market_series: Vec<Series> = Vec::with_capacity(daily_data.time_series.len());
-
-            for (date, series) in daily_data.time_series.iter() {
-                match transform(date, series) {
-                    Ok(series) => market_series.push(series),
-                    Err(err) => {
-                        result.push(Err(err));
-                        break;
-                    }
-                }
-            }
-
-            // sort the series by date
-            market_series.sort_by_key(|item| item.date);
-
-            result.push(Ok(MarketSeries {
-                symbol: daily_data.meta_data.symbol.clone(),
-                interval: Interval::Daily,
-                data: market_series,
-            }))
-        }
-
-        for wm_data in self.data_wm.iter() {
-            let mut market_series: Vec<Series> = Vec::with_capacity(wm_data.time_series.len());
-
-            for (date, series) in wm_data.time_series.iter() {
-                match transform(date, series) {
-                    Ok(series) => market_series.push(series),
-                    Err(err) => {
-                        result.push(Err(err));
-                        break;
-                    }
-                }
-            }
-
-            // sort the series by date
-            market_series.sort_by_key(|item| item.date);
-
-            result.push(Ok(MarketSeries {
-                symbol: wm_data.meta_data.symbol.clone(),
-                interval: Interval::Weekly,
-                data: market_series,
-            }))
-        }
-
-        // self.data have to be consumed once the data is transformed to MarketSeries
-        self.data_daily.clear();
-        self.data_intraday.clear();
-        self.data_wm.clear();
-
-        result
+        Ok(MarketSeries {
+            symbol: request.symbol.clone(),
+            interval: match request.function {
+                Function::Intraday => request.interval.as_ref().map(|i| i.clone().into()).unwrap_or(Interval::Daily),
+                Function::Daily => Interval::Daily,
+                Function::Weekly => Interval::Weekly,
+                Function::Monthly => Interval::Monthly,
+            },
+            data: data_series,
+        })
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AlphaIntradayPrices {
-    #[serde(rename = "Meta Data")]
-    pub meta_data: MetaIntraday,
-    #[serde(rename = "Time Series (30min)")]
-    pub time_series: HashMap<String, TimeSeriesData>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MetaIntraday {
-    #[serde(rename = "1. Information")]
-    pub information: String,
-    #[serde(rename = "2. Symbol")]
-    pub symbol: String,
-    #[serde(rename = "3. Last Refreshed")]
-    pub last_refreshed: String,
-    #[serde(rename = "4. Interval")]
-    pub interval: String,
-    #[serde(rename = "5. Output Size")]
-    pub output_size: String,
-    #[serde(rename = "6. Time Zone")]
-    pub time_zone: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AlphaDailyPrices {
-    #[serde(rename = "Meta Data")]
-    pub meta_data: MetaDaily,
-    #[serde(rename = "Time Series (Daily)")]
-    pub time_series: HashMap<String, TimeSeriesData>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MetaDaily {
-    #[serde(rename = "1. Information")]
-    pub information: String,
-    #[serde(rename = "2. Symbol")]
-    pub symbol: String,
-    #[serde(rename = "3. Last Refreshed")]
-    pub last_refreshed: String,
-    #[serde(rename = "4. Output Size")]
-    pub output_size: String,
-    #[serde(rename = "5. Time Zone")]
-    pub time_zone: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct AlphaWMPrices {
-    #[serde(rename = "Meta Data")]
-    pub meta_data: MetaWeekMonth,
-    #[serde(alias = "Weekly Time Series", alias = "Monthly Time Series")]
-    pub time_series: HashMap<String, TimeSeriesData>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct MetaWeekMonth {
-    #[serde(rename = "1. Information")]
-    pub information: String,
-    #[serde(rename = "2. Symbol")]
-    pub symbol: String,
-    #[serde(rename = "3. Last Refreshed")]
-    pub last_refreshed: String,
-    #[serde(rename = "4. Time Zone")]
-    pub time_zone: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct TimeSeriesData {
-    #[serde(rename = "1. open")]
-    pub open: String,
-    #[serde(rename = "2. high")]
-    pub high: String,
-    #[serde(rename = "3. low")]
-    pub low: String,
-    #[serde(rename = "4. close")]
-    pub close: String,
-    #[serde(rename = "5. volume")]
-    pub volume: String,
-}
-
-fn transform(date: &String, series: &TimeSeriesData) -> MarketResult<Series> {
-    let open: f32 = series
-        .open
-        .trim()
-        .parse()
-        .map_err(|e| MarketError::ParsingError(format!("Unable to parse Open field: {}", e)))?;
-    let close: f32 =
-        series.close.trim().parse().map_err(|e| {
-            MarketError::ParsingError(format!("Unable to parse Close field: {}", e))
-        })?;
-    let high: f32 = series
-        .high
-        .trim()
-        .parse()
-        .map_err(|e| MarketError::ParsingError(format!("Unable to parse High field: {}", e)))?;
-    let low: f32 = series
-        .low
-        .trim()
-        .parse()
-        .map_err(|e| MarketError::ParsingError(format!("Unable to parse Low field: {}", e)))?;
-    let volume: f32 =
-        series.volume.trim().parse().map_err(|e| {
-            MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
-        })?;
-    let date: NaiveDate = NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-        .map_err(|e| MarketError::ParsingError(format!("Unable to parse Volume field: {}", e)))?;
-
-    Ok(Series {
-        date,
-        open,
-        close,
-        high,
-        low,
-        volume,
-    })
-}
-
-impl ToString for Function {
-    fn to_string(&self) -> String {
-        match self {
-            Function::TimeSeriesIntraday => String::from("TIME_SERIES_INTRADAY"),
-            Function::TimeSeriesDaily => String::from("TIME_SERIES_DAILY"),
-            Function::TimeSeriesDailyAdjusted => String::from("TIME_SERIES_DAILY_ADJUSTED"),
-            Function::TimeSeriesWeekly => String::from("TIME_SERIES_WEEKLY"),
-            Function::TimeSeriesWeeklyAdjusted => String::from("TIME_SERIES_WEEKLY_ADJUSTED"),
-            Function::TimeSeriesMonthly => String::from("TIME_SERIES_MONTHLY"),
-            Function::TimeSeriesMonthlyAdjusted => String::from("TIME_SERIES_MONTHLY_ADJUSTED"),
-        }
+impl std::fmt::Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Function::Intraday => "TIME_SERIES_INTRADAY",
+            Function::Daily => "TIME_SERIES_DAILY",
+            Function::Weekly => "TIME_SERIES_WEEKLY",
+            Function::Monthly => "TIME_SERIES_MONTHLY",
+        };
+        write!(f, "{}", s)
     }
 }
-impl ToString for OutputSize {
-    fn to_string(&self) -> String {
-        match self {
-            OutputSize::Compact => String::from("Compact"),
-            OutputSize::Full => String::from("Full"),
-        }
+
+impl std::fmt::Display for OutputSize {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            OutputSize::Compact => "Compact",
+            OutputSize::Full => "Full",
+        };
+        write!(f, "{}", s)
     }
 }

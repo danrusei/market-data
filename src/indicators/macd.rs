@@ -35,5 +35,5 @@ pub(crate) fn calculate_macd(
 
     assert!((series.len() == macd_line.len()) && (series.len() == signal_line.len()));
 
-    (macd_line, signal_line.into(), histogram)
+    (macd_line, signal_line, histogram)
 }

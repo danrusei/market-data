@@ -16,7 +16,7 @@ pub use client::{Interval, MarketClient, MarketSeries, Series};
 mod publishers;
 pub use publishers::{
     alphavantage::{AlphaVantage, OutputSize},
-    iexcloud::Iex,
+    finnhub::Finnhub,
     polygon_io::Polygon,
     twelvedata::Twelvedata,
     yahoo_finance::{YahooFin, YahooRange},

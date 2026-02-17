@@ -34,11 +34,6 @@ lazy_static = "1.4.0"
 tokio = { version = "1.0", features = ["full"] }
 
 [[example]]
-name = "series_iexcloud"
-path = "examples/series_iexcloud.rs"
-required-features = ["use-sync"]
-
-[[example]]
 name = "series_alphavantage"
 path = "examples/series_alphavantage.rs"
 required-features = ["use-sync"]
@@ -52,6 +47,11 @@ required-features = ["use-sync"]
 name = "async_series_twelvedata"
 path = "examples/async_series_twelvedata.rs"
 required-features = ["use-async"]
+
+[[example]]
+name = "series_finnhub"
+path = "examples/series_finnhub.rs"
+required-features = ["use-sync"]
 
 [[example]]
 name = "series_polygon_io"

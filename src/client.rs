@@ -16,7 +16,10 @@ impl<T: Publisher> MarketClient<T> {
     pub fn new(site: T) -> Self {
         Self {
             site,
-            inner: reqwest::Client::new(),
+            inner: reqwest::Client::builder()
+                .user_agent("Mozilla/5.0 (market-data-rust)")
+                .build()
+                .unwrap_or_default(),
         }
     }
 

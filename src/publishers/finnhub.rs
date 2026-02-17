@@ -10,7 +10,7 @@ use crate::{
     publishers::Publisher,
 };
 
-const BASE_URL: &str = "https://finnhub.io/api/v1/stock/candle";
+const BASE_URL: &str = "https://finnhub.io/api/v1/";
 
 /// Fetch time series stock data from [Finnhub](https://finnhub.io/docs/api), implements Publisher trait
 #[derive(Debug)]
@@ -18,12 +18,17 @@ pub struct Finnhub {
     token: String,
 }
 
-#[derive(Debug)]
-pub struct FinnhubRequest {
-    symbol: String,
-    resolution: String,
-    from: i64,
-    to: i64,
+#[derive(Debug, Clone)]
+pub enum FinnhubRequest {
+    Candle {
+        symbol: String,
+        resolution: String,
+        from: i64,
+        to: i64,
+    },
+    Quote {
+        symbol: String,
+    },
 }
 
 impl Finnhub {
@@ -35,7 +40,7 @@ impl Finnhub {
 
     /// Request for daily series
     pub fn daily_series(&self, symbol: impl Into<String>, from: i64, to: i64) -> FinnhubRequest {
-        FinnhubRequest {
+        FinnhubRequest::Candle {
             symbol: symbol.into(),
             resolution: "D".to_string(),
             from,
@@ -45,7 +50,7 @@ impl Finnhub {
 
     /// Request for weekly series
     pub fn weekly_series(&self, symbol: impl Into<String>, from: i64, to: i64) -> FinnhubRequest {
-        FinnhubRequest {
+        FinnhubRequest::Candle {
             symbol: symbol.into(),
             resolution: "W".to_string(),
             from,
@@ -55,7 +60,7 @@ impl Finnhub {
 
     /// Request for monthly series
     pub fn monthly_series(&self, symbol: impl Into<String>, from: i64, to: i64) -> FinnhubRequest {
-        FinnhubRequest {
+        FinnhubRequest::Candle {
             symbol: symbol.into(),
             resolution: "M".to_string(),
             from,
@@ -84,12 +89,19 @@ impl Finnhub {
                 )))
             }
         };
-        Ok(FinnhubRequest {
+        Ok(FinnhubRequest::Candle {
             symbol: symbol.into(),
             resolution,
             from,
             to,
         })
+    }
+
+    /// Request for real-time quote (returns a single bar)
+    pub fn quote(&self, symbol: impl Into<String>) -> FinnhubRequest {
+        FinnhubRequest::Quote {
+            symbol: symbol.into(),
+        }
     }
 }
 
@@ -98,77 +110,178 @@ impl Publisher for Finnhub {
 
     fn create_endpoint(&self, request: &Self::Request) -> MarketResult<Url> {
         let base_url = Url::parse(BASE_URL)?;
-        let mut url = base_url;
-        url.query_pairs_mut()
-            .append_pair("symbol", &request.symbol)
-            .append_pair("resolution", &request.resolution)
-            .append_pair("from", &request.from.to_string())
-            .append_pair("to", &request.to.to_string())
-            .append_pair("token", &self.token);
-        Ok(url)
+        match request {
+            FinnhubRequest::Candle {
+                symbol,
+                resolution,
+                from,
+                to,
+            } => {
+                let mut url = base_url.join("stock/candle")?;
+                url.query_pairs_mut()
+                    .append_pair("symbol", symbol)
+                    .append_pair("resolution", resolution)
+                    .append_pair("from", &from.to_string())
+                    .append_pair("to", &to.to_string())
+                    .append_pair("token", &self.token);
+                Ok(url)
+            }
+            FinnhubRequest::Quote { symbol } => {
+                let mut url = base_url.join("quote")?;
+                url.query_pairs_mut()
+                    .append_pair("symbol", symbol)
+                    .append_pair("token", &self.token);
+                Ok(url)
+            }
+        }
     }
 
     fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
-        let candles: FinnhubCandles = serde_json::from_str(&data)?;
+        match request {
+            FinnhubRequest::Candle {
+                symbol,
+                resolution,
+                ..
+            } => {
+                let candles: FinnhubCandles = serde_json::from_str(&data)?;
 
-        if candles.status == "no_data" {
-            return Err(MarketError::DownloadedData(
-                "No data returned from Finnhub".to_string(),
-            ));
-        }
+                let status = match candles.status {
+                    Some(ref s) => s.as_str(),
+                    None => {
+                        if let Some(ref err) = candles.error {
+                            return Err(MarketError::DownloadedData(format!(
+                                "Finnhub error: {}",
+                                err
+                            )));
+                        }
+                        return Err(MarketError::DownloadedData(format!(
+                            "Finnhub response missing status. Response: {}",
+                            data
+                        )));
+                    }
+                };
 
-        let mut data_series: Vec<Series> = Vec::with_capacity(candles.t.len());
-        for i in 0..candles.t.len() {
-            let datetime = match DateTime::from_timestamp(candles.t[i], 0) {
-                Some(dt) => dt.date_naive(),
-                None => {
-                    return Err(MarketError::ParsingError(format!(
-                        "Unable to parse timestamp: {}",
-                        candles.t[i]
+                if status != "ok" {
+                    return Err(MarketError::DownloadedData(format!(
+                        "Error returned from Finnhub: {}",
+                        candles.error.unwrap_or_else(|| status.to_string())
                     )));
                 }
-            };
 
-            data_series.push(Series {
-                date: datetime,
-                open: candles.o[i],
-                close: candles.c[i],
-                high: candles.h[i],
-                low: candles.l[i],
-                volume: candles.v[i] as f32,
-            });
+                let t = candles
+                    .t
+                    .ok_or_else(|| MarketError::DownloadedData("Missing timestamps".to_string()))?;
+                let o = candles
+                    .o
+                    .ok_or_else(|| MarketError::DownloadedData("Missing open prices".to_string()))?;
+                let h = candles
+                    .h
+                    .ok_or_else(|| MarketError::DownloadedData("Missing high prices".to_string()))?;
+                let l = candles
+                    .l
+                    .ok_or_else(|| MarketError::DownloadedData("Missing low prices".to_string()))?;
+                let c = candles
+                    .c
+                    .ok_or_else(|| MarketError::DownloadedData("Missing close prices".to_string()))?;
+                let v = candles
+                    .v
+                    .ok_or_else(|| MarketError::DownloadedData("Missing volumes".to_string()))?;
+
+                let mut data_series: Vec<Series> = Vec::with_capacity(t.len());
+                for i in 0..t.len() {
+                    let datetime = DateTime::from_timestamp(t[i], 0).ok_or_else(|| {
+                        MarketError::ParsingError(format!("Unable to parse timestamp: {}", t[i]))
+                    })?;
+
+                    data_series.push(Series {
+                        datetime: datetime.naive_utc(),
+                        open: o[i],
+                        close: c[i],
+                        high: h[i],
+                        low: l[i],
+                        volume: v[i] as f64,
+                    });
+                }
+
+                data_series.sort_by_key(|item| item.datetime);
+
+                Ok(MarketSeries {
+                    symbol: symbol.clone(),
+                    interval: match resolution.as_str() {
+                        "D" => Interval::Daily,
+                        "W" => Interval::Weekly,
+                        "M" => Interval::Monthly,
+                        _ => Interval::Daily,
+                    },
+                    data: data_series,
+                })
+            }
+            FinnhubRequest::Quote { symbol } => {
+                let quote: FinnhubQuote = serde_json::from_str(&data)?;
+
+                // If 't' is 0, it often means the symbol was not found
+                if quote.t == 0 {
+                    return Err(MarketError::DownloadedData(format!(
+                        "Finnhub quote returned no data for symbol: {}",
+                        symbol
+                    )));
+                }
+
+                let datetime = DateTime::from_timestamp(quote.t, 0).ok_or_else(|| {
+                    MarketError::ParsingError(format!("Unable to parse timestamp: {}", quote.t))
+                })?;
+
+                let series = Series {
+                    datetime: datetime.naive_utc(),
+                    open: quote.o,
+                    close: quote.c,
+                    high: quote.h,
+                    low: quote.l,
+                    volume: 0.0, // Quote doesn't return volume
+                };
+
+                Ok(MarketSeries {
+                    symbol: symbol.clone(),
+                    interval: Interval::Daily,
+                    data: vec![series],
+                })
+            }
         }
-
-        // sort the series by date
-        data_series.sort_by_key(|item| item.date);
-
-        Ok(MarketSeries {
-            symbol: request.symbol.clone(),
-            interval: match request.resolution.as_str() {
-                "D" => Interval::Daily,
-                "W" => Interval::Weekly,
-                "M" => Interval::Monthly,
-                _ => Interval::Daily, // or map more precisely
-            },
-            data: data_series,
-        })
     }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 struct FinnhubCandles {
     #[serde(rename = "c")]
-    c: Vec<f32>,
+    c: Option<Vec<f32>>,
     #[serde(rename = "h")]
-    h: Vec<f32>,
+    h: Option<Vec<f32>>,
     #[serde(rename = "l")]
-    l: Vec<f32>,
+    l: Option<Vec<f32>>,
     #[serde(rename = "o")]
-    o: Vec<f32>,
+    o: Option<Vec<f32>>,
     #[serde(rename = "s")]
-    status: String,
+    status: Option<String>,
     #[serde(rename = "t")]
-    t: Vec<i64>,
+    t: Option<Vec<i64>>,
     #[serde(rename = "v")]
-    v: Vec<u64>,
+    v: Option<Vec<u64>>,
+    #[serde(rename = "error")]
+    error: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct FinnhubQuote {
+    #[serde(rename = "c")]
+    c: f32,
+    #[serde(rename = "h")]
+    h: f32,
+    #[serde(rename = "l")]
+    l: f32,
+    #[serde(rename = "o")]
+    o: f32,
+    #[serde(rename = "pc")]
+    pc: f32,
+    #[serde(rename = "t")]
+    t: i64,
 }

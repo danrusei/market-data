@@ -1,24 +1,24 @@
 use anyhow::Result;
 use lazy_static::lazy_static;
-use market_data::{MarketClient, Polygon};
+use market_data::{MarketClient, Massive};
 use std::env::var;
 
 lazy_static! {
     static ref TOKEN: String =
-        var("Polygon_TOKEN").expect("Polygon_TOKEN env variable is required");
+        var("Massive_TOKEN").expect("Massive_TOKEN env variable is required");
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     // Select a Publisher
-    let site = Polygon::new(TOKEN.to_string());
+    let site = Massive::new(TOKEN.to_string());
     // Create the MarketClient
     let client = MarketClient::new(site);
 
     // Create a request
     let request = client
         .site
-        .daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
+        .daily_series("GOOGL", "2026-01-01", "2026-02-15", 5000);
 
     // Fetch the data
     let data = client.fetch(request).await?;

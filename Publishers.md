@@ -8,7 +8,7 @@ This library supports multiple market data providers using a stateless, async-fi
 |-----------|-------------|------------|---------|-----------------|
 | [Finnhub](#finnhub) | Uncapped* | 60 req/min | 1 year+ | API Token |
 | [Alpha Vantage](#alphavantage) | 25 requests | - | 20+ years | API Token |
-| [Polygon.io](#polygon_io) | Uncapped* | 5 req/min | 2 years | API Token |
+| [Massive](#massive) | Uncapped* | 5 req/min | 2 years | API Token |
 | [Twelvedata](#twelvedata) | 800 credits | 8 req/min | Variable | API Token |
 | [Yahoo Finance](#yahoo-finance) | Uncapped | - | Max | None (Unofficial) |
 
@@ -63,19 +63,21 @@ let series = client.fetch(request).await?;
 
 ---
 
-## [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)<a name="polygon_io"></a>
+## [Massive](https://massive.com/docs/rest/stocks/aggregates/custom-bars)<a name="massive"></a>
+
+Formerly Polygon.io. Known for high-quality US equity data and a clean API.
 
 ### Implementation
 
 ```rust
-let site = Polygon::new(APIKEY);
+let site = Massive::new(APIKEY);
 let client = MarketClient::new(site);
 
 let request = client.site.daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
 let series = client.fetch(request).await?;
 ```
 
-**Check the [Polygon.io Example](https://github.com/danrusei/market-data/blob/main/examples/series_polygon_io.rs)**
+**Check the [Massive Example](https://github.com/danrusei/market-data/blob/main/examples/series_massive.rs)**
 
 ---
 

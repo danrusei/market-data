@@ -1,7 +1,9 @@
 //! Market-Data client implementation
 
-use crate::{errors::MarketResult, indicators::EnhancedMarketSeries, publishers::Publisher};
-use chrono::NaiveDate;
+use crate::{
+    errors::MarketResult, indicators::EnhancedMarketSeries, publishers::Publisher, MarketError,
+};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -17,7 +19,7 @@ impl<T: Publisher> MarketClient<T> {
         Self {
             site,
             inner: reqwest::Client::builder()
-                .user_agent("Mozilla/5.0 (market-data-rust)")
+                .user_agent("market-data-rust/0.4.0")
                 .build()
                 .unwrap_or_default(),
         }
@@ -27,6 +29,16 @@ impl<T: Publisher> MarketClient<T> {
     pub async fn fetch(&self, request: T::Request) -> MarketResult<MarketSeries> {
         let url = self.site.create_endpoint(&request)?;
         let response = self.inner.get(url).send().await?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(MarketError::HttpError(format!(
+                "HTTP Error: status code {}, body: {}",
+                status, body
+            )));
+        }
+
         let body = response.text().await?;
         self.site.transform_data(body, &request)
     }
@@ -46,8 +58,8 @@ pub struct MarketSeries {
 /// Series part of the MarketSeries
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Series {
-    /// the date of the stock price
-    pub date: NaiveDate,
+    /// the date and time of the stock price
+    pub datetime: NaiveDateTime,
     /// the opening price of the stock for the selected interval
     pub open: f32,
     /// the closing price of the stock for the selected interval
@@ -57,7 +69,7 @@ pub struct Series {
     /// the lowest price of the stock for the selected interval
     pub low: f32,
     /// the number of shares traded in the selected interval
-    pub volume: f32,
+    pub volume: f64,
 }
 
 /// The time interval between two data points
@@ -100,17 +112,15 @@ impl MarketSeries {
 
 impl fmt::Display for MarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+        writeln!(
             f,
-            "MarketSeries: Symbol = {}, Interval = {}, Series =\n{}",
-            self.symbol,
-            self.interval,
-            self.data
-                .iter()
-                .map(|series| format!("  {}", series))
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
+            "MarketSeries: Symbol = {}, Interval = {}",
+            self.symbol, self.interval
+        )?;
+        for series in &self.data {
+            writeln!(f, "  {}", series)?;
+        }
+        Ok(())
     }
 }
 
@@ -118,8 +128,8 @@ impl fmt::Display for Series {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Date: {}, Open: {}, Close: {}, High: {}, Low: {}, Volume: {}",
-            self.date, self.open, self.close, self.high, self.low, self.volume
+            "DateTime: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}",
+            self.datetime, self.open, self.close, self.high, self.low, self.volume
         )
     }
 }

@@ -17,7 +17,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-market-data = "0.4"
+market-data = "0.5"
 tokio = { version = "1.0", features = ["full"] }
 ```
 

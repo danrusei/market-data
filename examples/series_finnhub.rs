@@ -28,8 +28,17 @@ async fn main() -> Result<()> {
     // Fetch the data
     let data = client.fetch(request).await?;
 
-    // Print the data
-    println!("{}", data);
+    // Enhance the data with indicators
+    let enhanced_data = data
+        .enhance_data()
+        .with_sma(10)
+        .with_ema(20)
+        .with_rsi(14)
+        .with_macd(12, 26, 9)
+        .calculate();
+
+    // Print the enhanced data
+    println!("{}", enhanced_data);
 
     Ok(())
 }

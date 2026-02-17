@@ -1,15 +1,6 @@
 //! Fetch time series stock data from [Yahoo Finance](https://finance.yahoo.com/)
-///
-/// The Yahoo Finance API is free to use for personal projects. However, commercial usage of the API requires a paid subscription.
-/// This means that developers working on commercial projects will need to pay for a Yahoo Finance API subscription.
-///
-/// The Yahoo Finance API is updated once per day. This means that developers will need to use other data sources if they want real-time data.
-///
-/// Example:
-/// validRanges: 1d, 5d, 1mo, 3mo , 6mo, 1y, 2y, 5y, 10y, ytd, max
-/// https://query1.finance.yahoo.com/v8/finance/chart/AAPL?metrics=high&interval=1d&range=5d
-///
-use chrono::{DateTime, NaiveDate};
+
+use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use url::Url;
@@ -18,31 +9,23 @@ use crate::{
     client::{Interval, MarketSeries, Series},
     errors::{MarketError, MarketResult},
     publishers::Publisher,
-    rest_call::Client,
 };
 
 const BASE_URL: &str = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
 /// Fetch time series stock data from [Yahoo Finance](https://finance.yahoo.com/), implements Publisher trait
 #[derive(Debug, Default)]
-pub struct YahooFin {
-    requests: Vec<YahooRequest>,
-    endpoints: Vec<url::Url>,
-    data: Vec<YahooPrices>,
-    interval: Vec<Interval>,
-}
+pub struct YahooFin {}
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone)]
 pub struct YahooRequest {
     symbol: String,
-    // The time interval between two data points supported by yahoo finance:1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
-    // I'm mapping to lib Interval struct
     interval: String,
-    // validRanges: 1d, 5d, 1mo, 3mo , 6mo, 1y, 2y, 5y, 10y, ytd, max
     range: YahooRange,
+    interval_enum: Interval,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub enum YahooRange {
     Day1,
     Day5,
@@ -59,222 +42,161 @@ pub enum YahooRange {
 }
 
 impl YahooFin {
-    /// create new instance of Twelvedata
+    /// create new instance of YahooFin
     pub fn new() -> Self {
-        YahooFin {
-            ..Default::default()
-        }
+        YahooFin {}
     }
 
     /// Request for intraday series
-    /// supporting the following intervals: 1min, 5min, 15min, 30min, 1h for intraday
     pub fn intraday_series(
-        &mut self,
+        &self,
         symbol: impl Into<String>,
         interval: Interval,
         range: YahooRange,
-    ) -> MarketResult<()> {
-        self.interval.push(interval.clone());
-        let interval = match interval {
+    ) -> MarketResult<YahooRequest> {
+        let interval_str = match interval {
             Interval::Min1 => "1m".to_string(),
             Interval::Min5 => "5m".to_string(),
             Interval::Min15 => "15m".to_string(),
             Interval::Min30 => "30m".to_string(),
             Interval::Hour1 => "1h".to_string(),
-            _ => Err(MarketError::UnsuportedInterval(format!(
-                "{} interval is not supported by AlphaVantage",
-                interval
-            )))?,
+            _ => {
+                return Err(MarketError::UnsuportedInterval(format!(
+                    "{} interval is not supported by Yahoo Finance intraday",
+                    interval
+                )))
+            }
         };
-        self.requests.push(YahooRequest {
+        Ok(YahooRequest {
             symbol: symbol.into(),
-            interval,
+            interval: interval_str,
             range,
-        });
-        Ok(())
+            interval_enum: interval,
+        })
     }
 
     /// Request for daily series
-    pub fn daily_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
-        self.interval.push(Interval::Daily);
-        self.requests.push(YahooRequest {
+    pub fn daily_series(&self, symbol: impl Into<String>, range: YahooRange) -> YahooRequest {
+        YahooRequest {
             symbol: symbol.into(),
             interval: "1d".to_string(),
             range,
-        });
+            interval_enum: Interval::Daily,
+        }
     }
 
     /// Request for weekly series
-    pub fn weekly_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
-        self.interval.push(Interval::Weekly);
-        self.requests.push(YahooRequest {
+    pub fn weekly_series(&self, symbol: impl Into<String>, range: YahooRange) -> YahooRequest {
+        YahooRequest {
             symbol: symbol.into(),
             interval: "1wk".to_string(),
             range,
-        });
+            interval_enum: Interval::Weekly,
+        }
     }
 
     /// Request for monthly series
-    pub fn monthly_series(&mut self, symbol: impl Into<String>, range: YahooRange) {
-        self.interval.push(Interval::Monthly);
-        self.requests.push(YahooRequest {
+    pub fn monthly_series(&self, symbol: impl Into<String>, range: YahooRange) -> YahooRequest {
+        YahooRequest {
             symbol: symbol.into(),
             interval: "1m".to_string(),
             range,
-        });
+            interval_enum: Interval::Monthly,
+        }
     }
 }
 
 impl Publisher for YahooFin {
-    fn create_endpoint(&mut self) -> MarketResult<()> {
+    type Request = YahooRequest;
+
+    fn create_endpoint(&self, request: &Self::Request) -> MarketResult<Url> {
         let base_url = Url::parse(BASE_URL)?;
-        self.endpoints = self
-            .requests
-            .iter()
-            .map(|request| {
-                base_url
-                    .join(&format!(
-                        "{}?metrics=high&interval={}&range={}",
-                        request.symbol, request.interval, request.range,
-                    ))
-                    .unwrap()
-            })
-            .collect();
-        // self.requests have to be consumed once used for creating the endpoints
-        self.requests.clear();
-        Ok(())
-    }
-
-    #[cfg(feature = "use-sync")]
-    fn get_data(&mut self) -> MarketResult<()> {
-        let rest_client = Client::new();
-        for endpoint in &self.endpoints {
-            let response = rest_client.get_data(endpoint)?;
-            let body = response.into_string()?;
-
-            let prices: YahooPrices = serde_json::from_str(&body)?;
-            self.data.push(prices);
+        let mut url = base_url.join(&request.symbol)?;
+        {
+            let mut pairs = url.query_pairs_mut();
+            pairs.append_pair("metrics", "high");
+            pairs.append_pair("interval", &request.interval);
+            pairs.append_pair("range", &request.range.to_string());
         }
-        // self.endpoints have to be consumed once the data was downloaded for requested URL
-        self.endpoints.clear();
-
-        Ok(())
+        Ok(url)
     }
 
-    #[cfg(feature = "use-async")]
-    async fn get_data(&mut self) -> MarketResult<()> {
-        let client = Client::new();
-        for endpoint in &self.endpoints {
-            let response = client.get_data(endpoint).await?;
-            let body = response.text().await?;
+    fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
+        let yahoo_prices: YahooPrices = serde_json::from_str(&data)?;
 
-            let prices: YahooPrices = serde_json::from_str(&body)?;
-            self.data.push(prices);
+        if let Some(error) = &yahoo_prices.chart.error {
+            return Err(MarketError::DownloadedData(format!(
+                "Yahoo Finance error: {}",
+                error
+            )));
         }
 
-        // self.endpoints have to be consumed once the data was downloaded for requested URL
-        self.endpoints.clear();
+        let result = &yahoo_prices.chart.result[0];
+        let mut data_series: Vec<Series> = Vec::new();
 
-        Ok(())
-    }
+        for (i, timestamp) in result.timestamp.iter().enumerate() {
+            let datetime = DateTime::from_timestamp(*timestamp, 0).ok_or_else(|| {
+                MarketError::ParsingError("Unable to parse timestamp".to_string())
+            })?;
 
-    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()> {
-        serde_json::to_writer(writer, &self.data).map_err(|err| {
-            MarketError::ToWriter(format!("Unable to write to writer, got the error: {}", err))
-        })?;
-        Ok(())
-    }
+            let quote = &result.indicators.quote[0];
+            
+            // Check if values exist for this timestamp
+            let open = quote.open[i];
+            let high = quote.high[i];
+            let low = quote.low[i];
+            let close = quote.close[i];
+            let volume = quote.volume[i];
 
-    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>> {
-        let mut result = Vec::new();
-        for (i, data) in self.data.iter().enumerate() {
-            let parsed_data = transform(data, self.interval[i].clone());
-            for data in parsed_data.into_iter() {
-                result.push(data)
+            if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume) {
+                data_series.push(Series {
+                    date: datetime.date_naive(),
+                    open: o as f32,
+                    high: h as f32,
+                    low: l as f32,
+                    close: c as f32,
+                    volume: v as f32,
+                });
             }
         }
 
-        // self.data have to be consumed once the data is transformed to MarketSeries
-        self.data.clear();
-        result
+        Ok(MarketSeries {
+            symbol: result.meta.symbol.clone(),
+            interval: request.interval_enum.clone(),
+            data: data_series,
+        })
     }
 }
 
-// Yahoo API Deserialization
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct YahooPrices {
     chart: Chart,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Chart {
-    result: Vec<Result>,
-    error: Option<String>,
+    result: Vec<YahooResult>,
+    error: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Result {
+#[derive(Debug, Deserialize, Serialize)]
+struct YahooResult {
     meta: Meta,
     timestamp: Vec<i64>,
     indicators: Indicators,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Meta {
-    currency: String,
     symbol: String,
-    #[serde(rename = "exchangeName")]
-    exchange_name: String,
-    #[serde(rename = "instrumentType")]
-    instrument_type: String,
-    #[serde(rename = "firstTradeDate")]
-    first_trade_date: i64,
-    #[serde(rename = "regularMarketTime")]
-    regular_market_time: i64,
-    #[serde(rename = "hasPrePostMarketData")]
-    has_pre_post_market_data: bool,
-    gmtoffset: i64,
-    timezone: String,
-    #[serde(rename = "exchangeTimezoneName")]
-    exchange_timezone_name: String,
-    #[serde(rename = "regularMarketPrice")]
-    regular_market_price: f64,
-    #[serde(rename = "chartPreviousClose")]
-    chart_previous_close: f64,
-    #[serde(rename = "priceHint")]
-    price_hint: i32,
-    #[serde(rename = "currentTradingPeriod")]
-    current_trading_period: CurrentTradingPeriod,
-    #[serde(rename = "dataGranularity")]
-    data_granularity: String,
-    range: String,
-    #[serde(rename = "validRanges")]
-    valid_ranges: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct CurrentTradingPeriod {
-    pre: TradingPeriod,
-    regular: TradingPeriod,
-    post: TradingPeriod,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct TradingPeriod {
-    timezone: String,
-    end: i64,
-    start: i64,
-    gmtoffset: i64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Indicators {
     quote: Vec<Quote>,
-    adjclose: Option<Vec<AdjClose>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Quote {
     volume: Vec<Option<i64>>,
     close: Vec<Option<f64>>,
@@ -283,80 +205,9 @@ struct Quote {
     high: Vec<Option<f64>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct AdjClose {
-    adjclose: Vec<f64>,
-}
-
-fn transform(data: &YahooPrices, interval: Interval) -> Vec<MarketResult<MarketSeries>> {
-    let mut result = Vec::new();
-
-    // validate the data, first check is status
-    if let Some(error) = &data.chart.error {
-        result.push(Err(MarketError::DownloadedData(format!(
-            "The return data has some error: {}",
-            error
-        ))));
-    }
-
-    for data in data.chart.result.iter() {
-        let mut data_series: Vec<Series> = Vec::new();
-        let mut timestamps: Vec<NaiveDate> = Vec::new();
-
-        for timestamp in data.timestamp.iter() {
-            // Create a NaiveDateTime from the Unix timestamp
-            let datetime = DateTime::from_timestamp(*timestamp, 0).ok_or(
-                MarketError::ParsingError("Unable to parse the timestamp".to_string()),
-            );
-
-            match datetime {
-                Ok(datetime) => {
-                    // Extract the date part
-                    let date = datetime.date_naive();
-                    timestamps.push(date);
-                }
-                Err(err) => {
-                    result.push(Err(err));
-                    // TO FIX !!!, need to continue with outer loop
-                    continue;
-                }
-            }
-        }
-
-        for series in data.indicators.quote.iter() {
-            for (j, date) in timestamps
-                .iter()
-                .enumerate()
-                .take(series.open.len() - 1)
-                .skip(1)
-            {
-                data_series.push(Series {
-                    date: *date,
-                    open: series.open[j].unwrap_or_default() as _,
-                    close: series.close[j].unwrap_or_default() as _,
-                    high: series.high[j].unwrap_or_default() as _,
-                    low: series.low[j].unwrap_or_default() as _,
-                    volume: series.volume[j].unwrap_or_default() as _,
-                })
-            }
-
-            // sort the series by date
-            //data_series.sort_by_key(|item| item.date);
-        }
-        result.push(Ok(MarketSeries {
-            symbol: data.meta.symbol.clone(),
-            interval: interval.clone(),
-            data: data_series,
-        }))
-    }
-
-    result
-}
-
-// validRanges: 1d, 5d, 1mo, 3mo , 6mo, 1y, 2y, 5y, 10y, ytd, max
 impl fmt::Display for YahooRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let range_str = match self {
+        let s = match self {
             YahooRange::Day1 => "1d",
             YahooRange::Day5 => "5d",
             YahooRange::Month1 => "1mo",
@@ -369,7 +220,6 @@ impl fmt::Display for YahooRange {
             YahooRange::Ytd => "ytd",
             YahooRange::Max => "max",
         };
-
-        write!(f, "{}", range_str)
+        write!(f, "{}", s)
     }
 }

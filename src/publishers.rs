@@ -5,14 +5,11 @@ pub(crate) mod twelvedata;
 pub(crate) mod yahoo_finance;
 
 use crate::{client::MarketSeries, errors::MarketResult};
+use url::Url;
 
-// This trait has to be implemented by all the added sites
+/// This trait has to be implemented by all the added sites
 pub trait Publisher {
-    fn create_endpoint(&mut self) -> MarketResult<()>;
-    #[cfg(feature = "use-async")]
-    fn get_data(&mut self) -> impl std::future::Future<Output = MarketResult<()>> + Send;
-    #[cfg(feature = "use-sync")]
-    fn get_data(&mut self) -> MarketResult<()>;
-    fn to_writer(&self, writer: impl std::io::Write) -> MarketResult<()>;
-    fn transform_data(&mut self) -> Vec<MarketResult<MarketSeries>>;
+    type Request;
+    fn create_endpoint(&self, request: &Self::Request) -> MarketResult<Url>;
+    fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries>;
 }

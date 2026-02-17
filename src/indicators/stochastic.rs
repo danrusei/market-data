@@ -18,9 +18,9 @@ pub(crate) fn calculate_stochastic(series: &[Series], period: usize) -> VecDeque
         let mut highest_high = f32::NEG_INFINITY;
 
         //Find Lowest Low and Highest High:
-        for j in (i - period + 1)..=i {
-            let current_low = series[j].low;
-            let current_high = series[j].high;
+        for s in &series[i - period + 1..=i] {
+            let current_low = s.low;
+            let current_high = s.high;
 
             if current_low < lowest_low {
                 lowest_low = current_low;

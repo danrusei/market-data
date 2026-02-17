@@ -19,6 +19,9 @@ pub(crate) mod rsi;
 pub(crate) mod sma;
 pub(crate) mod stochastic;
 
+/// Type alias for indicators that return three values (e.g., MACD, Bollinger Bands)
+pub type TripleIndicatorData = (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>);
+
 /// Holds the MarketSeries + the calculation for the supported indicators
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EnhancedMarketSeries {
@@ -36,12 +39,12 @@ pub struct EnhancedMarketSeries {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Ask {
-    SMA(usize),
-    EMA(usize),
-    RSI(usize),
+    Sma(usize),
+    Ema(usize),
+    Rsi(usize),
     Stochastic(usize),
-    MACD(usize, usize, usize),
-    BB(usize, usize),
+    Macd(usize, usize, usize),
+    Bb(usize, usize),
 }
 
 /// It is part of the EnhancedMarketSeries struct
@@ -56,27 +59,27 @@ pub struct Indicators {
     ///  Stochastic Oscillator
     pub stochastic: HashMap<String, VecDeque<f32>>,
     /// Moving average convergence/divergence (MACD)
-    pub macd: HashMap<String, (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>)>,
+    pub macd: HashMap<String, TripleIndicatorData>,
     /// Bollinger Band (BB)
-    pub bb: HashMap<String, (VecDeque<f32>, VecDeque<f32>, VecDeque<f32>)>,
+    pub bb: HashMap<String, TripleIndicatorData>,
 }
 
 impl EnhancedMarketSeries {
     /// Simple Moving Average, a period must be provided over which it will be calculated
     pub fn with_sma(mut self, period: usize) -> Self {
-        self.asks.push(Ask::SMA(period));
+        self.asks.push(Ask::Sma(period));
         self
     }
 
     /// Exponential Moving Average, a period must be provided over which it will be calculated
     pub fn with_ema(mut self, period: usize) -> Self {
-        self.asks.push(Ask::EMA(period));
+        self.asks.push(Ask::Ema(period));
         self
     }
 
     /// Relative Strength Index, a period must be provided over which it will be calculated
     pub fn with_rsi(mut self, period: usize) -> Self {
-        self.asks.push(Ask::RSI(period));
+        self.asks.push(Ask::Rsi(period));
         self
     }
 
@@ -88,66 +91,69 @@ impl EnhancedMarketSeries {
 
     /// Moving average convergence/divergence (MACD), a fast, slow & signal EMA values should be provided, default (12, 26, 9)
     pub fn with_macd(mut self, fast: usize, slow: usize, signal: usize) -> Self {
-        self.asks.push(Ask::MACD(fast, slow, signal));
+        self.asks.push(Ask::Macd(fast, slow, signal));
         self
     }
 
     /// Bollinger Bands (BB), the period & standard deviation values should be provided, like (20, 2)
     pub fn with_bb(mut self, period: usize, std_dev: usize) -> Self {
-        self.asks.push(Ask::BB(period, std_dev));
+        self.asks.push(Ask::Bb(period, std_dev));
         self
     }
 
     /// Calculate the indicators and populate within the EnhancedMarketSeries struct
     pub fn calculate(mut self) -> Self {
-        self.asks.iter().for_each(|ind| match ind {
-            Ask::SMA(period) => {
-                let calc_sma = calculate_sma(&self.series, period.clone());
-                self.indicators
-                    .sma
-                    .insert(format!("SMA {}", period), calc_sma);
-            }
+        let series = self.series.clone();
+        for ind in self.asks.iter() {
+            match ind {
+                Ask::Sma(period) => {
+                    let calc_sma = calculate_sma(&series, *period);
+                    self.indicators
+                        .sma
+                        .insert(format!("SMA {}", period), calc_sma);
+                }
 
-            Ask::EMA(period) => {
-                let calc_ema = calculate_ema(&self.series, period.clone());
-                self.indicators
-                    .ema
-                    .insert(format!("EMA {}", period), calc_ema);
-            }
+                Ask::Ema(period) => {
+                    let calc_ema = calculate_ema(&series, *period);
+                    self.indicators
+                        .ema
+                        .insert(format!("EMA {}", period), calc_ema);
+                }
 
-            Ask::RSI(period) => {
-                let calc_rsi = calculate_rsi(&self.series, period.clone());
-                self.indicators
-                    .rsi
-                    .insert(format!("RSI {}", period), calc_rsi);
-            }
+                Ask::Rsi(period) => {
+                    let calc_rsi = calculate_rsi(&series, *period);
+                    self.indicators
+                        .rsi
+                        .insert(format!("RSI {}", period), calc_rsi);
+                }
 
-            Ask::Stochastic(period) => {
-                let calc_stoch = calculate_stochastic(&self.series, period.clone());
-                self.indicators
-                    .stochastic
-                    .insert(format!("STO {}", period), calc_stoch);
-            }
+                Ask::Stochastic(period) => {
+                    let calc_stoch = calculate_stochastic(&series, *period);
+                    self.indicators
+                        .stochastic
+                        .insert(format!("STO {}", period), calc_stoch);
+                }
 
-            Ask::MACD(fast, slow, signal) => {
-                let (calc_macd, calc_signal, calc_histogram) =
-                    calculate_macd(&self.series, fast.clone(), slow.clone(), signal.clone());
+                Ask::Macd(fast, slow, signal) => {
+                    let (calc_macd, calc_signal, calc_histogram) =
+                        calculate_macd(&series, *fast, *slow, *signal);
 
-                self.indicators.macd.insert(
-                    format!("MACD ({}, {}, {})", fast, slow, signal),
-                    (calc_macd, calc_signal, calc_histogram),
-                );
-            }
-            Ask::BB(period, std_dev) => {
-                let (upper_band, mid_band, lower_band) =
-                    calculate_bollinger_bands(&self.series, period.clone(), std_dev.clone());
+                    self.indicators.macd.insert(
+                        format!("MACD ({}, {}, {})", fast, slow, signal),
+                        (calc_macd, calc_signal, calc_histogram),
+                    );
+                }
+                Ask::Bb(period, std_dev) => {
+                    let (upper_band, mid_band, lower_band) =
+                        calculate_bollinger_bands(&series, *period, *std_dev);
 
-                self.indicators.bb.insert(
-                    format!("BB ({}, {})", period, std_dev),
-                    (upper_band, mid_band, lower_band),
-                );
+                    self.indicators.bb.insert(
+                        format!("BB ({}, {})", period, std_dev),
+                        (upper_band, mid_band, lower_band),
+                    );
+                }
             }
-        });
+        }
 
         self
     }
@@ -156,21 +162,21 @@ impl EnhancedMarketSeries {
 impl fmt::Display for Ask {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Ask::SMA(period) => write!(f, "SMA({})", period),
-            Ask::EMA(period) => write!(f, "EMA({})", period),
-            Ask::RSI(period) => write!(f, "RSI({})", period),
-            Ask::MACD(fast, slow, signal) => write!(f, "MACD({}, {}, {})", fast, slow, signal),
+            Ask::Sma(period) => write!(f, "SMA({})", period),
+            Ask::Ema(period) => write!(f, "EMA({})", period),
+            Ask::Rsi(period) => write!(f, "RSI({})", period),
+            Ask::Macd(fast, slow, signal) => write!(f, "MACD({}, {}, {})", fast, slow, signal),
             Ask::Stochastic(period) => write!(f, "STO({})", period),
-            Ask::BB(period, std_dev) => write!(f, "BB({}, {})", period, std_dev),
+            Ask::Bb(period, std_dev) => write!(f, "BB({}, {})", period, std_dev),
         }
     }
 }
 
 impl fmt::Display for EnhancedMarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+        writeln!(
             f,
-            "EnhancedMarketSerie: Symbol = {}, Interval = {},  Requested Indicators: {:?}, Series: \n",
+            "EnhancedMarketSerie: Symbol = {}, Interval = {},  Requested Indicators: {:?}, Series: ",
             self.symbol, self.interval, self.asks
         )?;
         for (i, series) in self.series.iter().enumerate() {
@@ -231,9 +237,6 @@ impl fmt::Display for EnhancedMarketSeries {
                     }
                 }
             }
-
-            // Remove trailing comma and space
-            //let _ = f.write_str("\b\b");
 
             if i < self.series.len() - 1 {
                 writeln!(f, ",")?;

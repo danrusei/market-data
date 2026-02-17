@@ -1,43 +1,46 @@
-name: "Market-Data"
+name: "Market-Data CI"
+
 on:
   push:
+    branches: [ "main" ]
   pull_request:
-
+    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: cargo test
+  build_and_test:
+    name: Build and Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      
+      - name: Setup Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy, rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Lint with Clippy
+        run: cargo clippy -- -D warnings
+
       - name: Build
         run: cargo build --verbose
-      - name: Run example series_alphavantage
-        run: cargo test --example series_alphavantage
-      - name: Run example series_iexcloud
-        run: cargo test --example series_iexcloud
-      - name: Run example series_twelvedata
-        run: cargo test --example series_twelvedata
-      - name: Run example series_polygon_io
-        run: cargo test --example series_polygon_io
-      - name: Run example series_yahoo_finance
-        run: cargo test --example series_yahoo_finance
-      - name: Run example async_series_twelvedata
-        run: cargo test --example async_series_twelvedata --features="use-async" --no-default-features
 
-   # Check formatting with rustfmt
-  formatting:
-    name: cargo fmt
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Check examples compilation
+        run: cargo check --examples --verbose
+
+  # Optional: Security audit for dependencies
+  audit:
+    name: Security Audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Ensure rustfmt is installed and setup problem matcher
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: rustfmt
-      - name: Rustfmt Check
-        uses: actions-rust-lang/rustfmt@v1
+      - name: Run cargo-audit
+        uses: actions-rust-lang/audit@v1

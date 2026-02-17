@@ -15,7 +15,7 @@ pub(crate) fn calculate_bollinger_bands(
         return (VecDeque::new(), VecDeque::new(), VecDeque::new());
     }
 
-    let middle_band_values = calculate_ema(&series, period);
+    let middle_band_values = calculate_ema(series, period);
 
     let mut upper_band_values = VecDeque::new();
     let mut lower_band_values = VecDeque::new();

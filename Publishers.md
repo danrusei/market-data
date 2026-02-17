@@ -1,6 +1,6 @@
 # Supported Publishers (Time-Series Data)
 
-This library supports multiple market data providers. Most require an API token, which can usually be obtained via a free tier on their respective websites.
+This library supports multiple market data providers using a stateless, async-first architecture.
 
 ## Quick Comparison (Free Tiers - Feb 2026)
 
@@ -16,18 +16,31 @@ This library supports multiple market data providers. Most require an API token,
 
 ---
 
-## [Finnhub](https://finnhub.io/docs/api)<a name="finnhub"></a>
+## Core Architecture
 
-Finnhub provides a robust API with generous rate limits for the free tier (60 requests/minute for US stocks).
+The library uses a stateless `MarketClient` that works with any implementation of the `Publisher` trait.
+
+```rust
+let site = Finnhub::new(TOKEN);
+let client = MarketClient::new(site);
+
+let request = client.site.daily_series("AAPL", from_timestamp, to_timestamp);
+let series = client.fetch(request).await?;
+```
+
+---
+
+## [Finnhub](https://finnhub.io/docs/api)<a name="finnhub"></a>
 
 ### Implementation
 
 ```rust
-let mut site = Finnhub::new(TOKEN.to_string());
+let site = Finnhub::new(TOKEN);
+let client = MarketClient::new(site);
 
 // Unix timestamps are required for 'from' and 'to' parameters
-site.daily_series("AAPL", 1672531200, 1675209600);
-site.intraday_series("MSFT", 1672531200, 1675209600, Interval::Min15)?;
+let request = client.site.daily_series("AAPL", 1672531200, 1675209600);
+let series = client.fetch(request).await?;
 ```
 
 **Check the [Finnhub Example](https://github.com/danrusei/market-data/blob/main/examples/series_finnhub.rs)**
@@ -36,21 +49,15 @@ site.intraday_series("MSFT", 1672531200, 1675209600, Interval::Min15)?;
 
 ## [Alpha Vantage](https://www.alphavantage.co/documentation/#time-series-data)<a name="alphavantage"></a>
 
-A veteran in the space, offering extensive historical data and technical indicators.
-
 ### Implementation
 
 ```rust
-let mut site = AlphaVantage::new(TOKEN.to_string());
+let site = AlphaVantage::new(TOKEN);
+let client = MarketClient::new(site);
 
-site.daily_series("AAPL", OutputSize::Compact);
-site.weekly_series("GOOGL", OutputSize::Full);
+let request = client.site.daily_series("AAPL", OutputSize::Compact);
+let series = client.fetch(request).await?;
 ```
-
-**output_size**:
-
-* **Compact**: Returns the latest 100 data points.
-* **Full**: Returns the full-length time series (up to 20+ years).
 
 **Check the [Alpha Vantage Example](https://github.com/danrusei/market-data/blob/main/examples/series_alphavantage.rs)**
 
@@ -58,15 +65,14 @@ site.weekly_series("GOOGL", OutputSize::Full);
 
 ## [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)<a name="polygon_io"></a>
 
-Known for high-quality US equity data and a clean API.
-
 ### Implementation
 
 ```rust
-let mut site = Polygon::new(APIKEY.to_string());
+let site = Polygon::new(APIKEY);
+let client = MarketClient::new(site);
 
-site.daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
-site.intraday_series("MSFT", "2024-03-06", "2024-03-06", Interval::Min30, 2000)?;
+let request = client.site.daily_series("GOOGL", "2024-01-01", "2024-03-01", 5000);
+let series = client.fetch(request).await?;
 ```
 
 **Check the [Polygon.io Example](https://github.com/danrusei/market-data/blob/main/examples/series_polygon_io.rs)**
@@ -75,18 +81,15 @@ site.intraday_series("MSFT", "2024-03-06", "2024-03-06", Interval::Min30, 2000)?
 
 ## [Twelvedata](https://twelvedata.com/docs#time-series)<a name="twelvedata"></a>
 
-Offers a wide variety of assets and built-in technical indicators.
-
 ### Implementation
 
 ```rust
-let mut site = Twelvedata::new(TOKEN.to_string());
+let site = Twelvedata::new(TOKEN);
+let client = MarketClient::new(site);
 
-site.daily_series("AAPL", 100);
-site.intraday_series("MSFT", 200, Interval::Hour1);
+let request = client.site.daily_series("AAPL", 100);
+let series = client.fetch(request).await?;
 ```
-
-**output_size**: Range from 1 to 5000 (default is 30).
 
 **Check the [Twelvedata Example](https://github.com/danrusei/market-data/blob/main/examples/series_twelvedata.rs)**
 
@@ -94,17 +97,14 @@ site.intraday_series("MSFT", 200, Interval::Hour1);
 
 ## [Yahoo Finance](https://finance.yahoo.com/)<a name="yahoo-finance"></a>
 
-The only provider in this list that doesn't require an API token. Useful for personal projects.
-
 ### Implementation
 
 ```rust
-let mut site = YahooFin::new();
+let site = YahooFin::new();
+let client = MarketClient::new(site);
 
-site.daily_series("GOOGL", YahooRange::Month6);
-site.intraday_series("MSFT", Interval::Hour1, YahooRange::Day5)?;
+let request = client.site.daily_series("GOOGL", YahooRange::Month6);
+let series = client.fetch(request).await?;
 ```
-
-**YahooRange**: `Day1`, `Day5`, `Month1`, `Month3`, `Month6`, `Year1`, `Year2`, `Year5`, `Year10`, `Ytd`, `Max`.
 
 **Check the [Yahoo Finance Example](https://github.com/danrusei/market-data/blob/main/examples/series_yahoo_finance.rs)**

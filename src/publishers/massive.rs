@@ -1,4 +1,4 @@
-//! Fetch time series stock data from [Polygon.io](https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to)
+//! Fetch time series stock data from [Massive](https://massive.com/docs/rest/stocks/aggregates/custom-bars)
 
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
@@ -10,16 +10,16 @@ use crate::{
     publishers::Publisher,
 };
 
-const BASE_URL: &str = "https://api.polygon.io/v2/aggs/ticker/";
+const BASE_URL: &str = "https://api.massive.com/v2/aggs/ticker/";
 
-/// Fetch time series stock data from [Polygon.io](), implements Publisher trait
+/// Fetch time series stock data from [Massive](https://massive.com/), implements Publisher trait
 #[derive(Debug)]
-pub struct Polygon {
+pub struct Massive {
     token: String,
 }
 
 #[derive(Debug, Clone)]
-pub struct PolygonRequest {
+pub struct MassiveRequest {
     symbol: String,
     timespan: String,
     multiplier: i32,
@@ -29,10 +29,10 @@ pub struct PolygonRequest {
     interval: Interval,
 }
 
-impl Polygon {
-    /// create new instance of Polygon
+impl Massive {
+    /// create new instance of Massive
     pub fn new(token: impl Into<String>) -> Self {
-        Polygon {
+        Massive {
             token: token.into(),
         }
     }
@@ -45,7 +45,7 @@ impl Polygon {
         to_date: impl Into<String>,
         interval: Interval,
         limit: i32,
-    ) -> MarketResult<PolygonRequest> {
+    ) -> MarketResult<MassiveRequest> {
         let (timespan, multiplier) = match interval {
             Interval::Min1 => ("minute", 1),
             Interval::Min5 => ("minute", 5),
@@ -56,12 +56,12 @@ impl Polygon {
             Interval::Hour4 => ("hour", 4),
             _ => {
                 return Err(MarketError::UnsuportedInterval(format!(
-                    "{} interval is not supported by Polygon",
+                    "{} interval is not supported by Massive",
                     interval
                 )))
             }
         };
-        Ok(PolygonRequest {
+        Ok(MassiveRequest {
             symbol: symbol.into(),
             timespan: timespan.into(),
             multiplier,
@@ -79,8 +79,8 @@ impl Polygon {
         from_date: impl Into<String>,
         to_date: impl Into<String>,
         limit: i32,
-    ) -> PolygonRequest {
-        PolygonRequest {
+    ) -> MassiveRequest {
+        MassiveRequest {
             symbol: symbol.into(),
             timespan: "day".to_string(),
             multiplier: 1,
@@ -98,8 +98,8 @@ impl Polygon {
         from_date: impl Into<String>,
         to_date: impl Into<String>,
         limit: i32,
-    ) -> PolygonRequest {
-        PolygonRequest {
+    ) -> MassiveRequest {
+        MassiveRequest {
             symbol: symbol.into(),
             timespan: "week".to_string(),
             multiplier: 1,
@@ -117,8 +117,8 @@ impl Polygon {
         from_date: impl Into<String>,
         to_date: impl Into<String>,
         limit: i32,
-    ) -> PolygonRequest {
-        PolygonRequest {
+    ) -> MassiveRequest {
+        MassiveRequest {
             symbol: symbol.into(),
             timespan: "month".to_string(),
             multiplier: 1,
@@ -130,8 +130,8 @@ impl Polygon {
     }
 }
 
-impl Publisher for Polygon {
-    type Request = PolygonRequest;
+impl Publisher for Massive {
+    type Request = MassiveRequest;
 
     fn create_endpoint(&self, request: &Self::Request) -> MarketResult<Url> {
         let base_url = Url::parse(BASE_URL)?;
@@ -153,7 +153,7 @@ impl Publisher for Polygon {
     }
 
     fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
-        let prices: PolygonPrices = serde_json::from_str(&data)?;
+        let prices: MassivePrices = serde_json::from_str(&data)?;
 
         if prices.status != "OK" {
             return Err(MarketError::DownloadedData(format!(
@@ -170,12 +170,12 @@ impl Publisher for Polygon {
             })?;
 
             data_series.push(Series {
-                date: datetime.date_naive(),
+                datetime: datetime.naive_utc(),
                 open: series.o,
                 close: series.c,
                 high: series.h,
                 low: series.l,
-                volume: series.v as f32,
+                volume: series.v,
             })
         }
 
@@ -188,7 +188,7 @@ impl Publisher for Polygon {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct PolygonPrices {
+struct MassivePrices {
     #[serde(rename = "results")]
     time_series: Vec<TimeSeriesData>,
     status: String,

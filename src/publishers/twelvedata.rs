@@ -1,6 +1,6 @@
 //! Fetch time series stock data from [Twelvedata](https://twelvedata.com/docs#time-series)
 
-use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -131,23 +131,24 @@ impl Publisher for Twelvedata {
             let low: f32 = series.low.trim().parse().map_err(|e| {
                 MarketError::ParsingError(format!("Unable to parse Low field: {}", e))
             })?;
-            let volume: f32 = series.volume.trim().parse().map_err(|e| {
+            let volume: f64 = series.volume.trim().parse().map_err(|e| {
                 MarketError::ParsingError(format!("Unable to parse Volume field: {}", e))
             })?;
 
-            let date = if prices.meta.interval.contains("min") || prices.meta.interval.contains('h')
-            {
-                NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse datetime: {}", e))
-                })?
+            let datetime = if series.datetime.len() == 10 {
+                NaiveDateTime::parse_from_str(
+                    &format!("{} 00:00:00", series.datetime),
+                    "%Y-%m-%d %H:%M:%S",
+                )
+                .map_err(|e| MarketError::ParsingError(format!("Unable to parse date: {}", e)))?
             } else {
-                NaiveDate::parse_from_str(&series.datetime, "%Y-%m-%d").map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse date: {}", e))
-                })?
+                NaiveDateTime::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(
+                    |e| MarketError::ParsingError(format!("Unable to parse datetime: {}", e)),
+                )?
             };
 
             data_series.push(Series {
-                date,
+                datetime,
                 open,
                 close,
                 high,
@@ -157,7 +158,7 @@ impl Publisher for Twelvedata {
         }
 
         // sort the series by date
-        data_series.sort_by_key(|item| item.date);
+        data_series.sort_by_key(|item| item.datetime);
 
         Ok(MarketSeries {
             symbol: prices.meta.symbol.clone(),

@@ -131,6 +131,12 @@ impl Publisher for YahooFin {
             )));
         }
 
+        if yahoo_prices.chart.result.is_empty() {
+            return Err(MarketError::DownloadedData(
+                "Yahoo Finance returned empty result".to_string(),
+            ));
+        }
+
         let result = &yahoo_prices.chart.result[0];
         let mut data_series: Vec<Series> = Vec::new();
 
@@ -139,24 +145,28 @@ impl Publisher for YahooFin {
                 MarketError::ParsingError("Unable to parse timestamp".to_string())
             })?;
 
+            if result.indicators.quote.is_empty() {
+                continue;
+            }
+
             let quote = &result.indicators.quote[0];
 
             // Check if values exist for this timestamp
-            let open = quote.open[i];
-            let high = quote.high[i];
-            let low = quote.low[i];
-            let close = quote.close[i];
-            let volume = quote.volume[i];
+            let open = quote.open.get(i).and_then(|v| *v);
+            let high = quote.high.get(i).and_then(|v| *v);
+            let low = quote.low.get(i).and_then(|v| *v);
+            let close = quote.close.get(i).and_then(|v| *v);
+            let volume = quote.volume.get(i).and_then(|v| *v);
 
             if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume)
             {
                 data_series.push(Series {
-                    date: datetime.date_naive(),
+                    datetime: datetime.naive_utc(),
                     open: o as f32,
                     high: h as f32,
                     low: l as f32,
                     close: c as f32,
-                    volume: v as f32,
+                    volume: v as f64,
                 });
             }
         }

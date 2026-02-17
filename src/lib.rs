@@ -17,7 +17,7 @@ mod publishers;
 pub use publishers::{
     alphavantage::{AlphaVantage, OutputSize},
     finnhub::Finnhub,
-    polygon_io::Polygon,
+    massive::Massive,
     twelvedata::Twelvedata,
     yahoo_finance::{YahooFin, YahooRange},
 };

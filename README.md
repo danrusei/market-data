@@ -8,7 +8,7 @@ This library provides a stateless, async-first API to download historical stock 
 
 - **Async-first**: Built on `tokio` and `reqwest`.
 - **Stateless Architecture**: Reusable clients and immutable request objects.
-- **Multiple Publishers**: Supports Finnhub, Alpha Vantage, Polygon.io, Twelvedata, and Yahoo Finance.
+- **Multiple Publishers**: Supports Finnhub, Alpha Vantage, Massive (formerly Polygon.io), Twelvedata, and Yahoo Finance.
 - **Technical Indicators**: Built-in support for SMA, EMA, RSI, MACD, and Stochastic Oscillator.
 
 ## Installation
@@ -64,7 +64,7 @@ Details on rate limits and historical data depth can be found in [Publishers.md]
 
 - [x] [Finnhub](https://finnhub.io/docs/api)
 - [x] [Alpha Vantage](https://www.alphavantage.co/documentation/)
-- [x] [Polygon.io](https://polygon.io/docs/stocks/getting-started)
+- [x] [Massive](https://massive.com/docs/rest/stocks/aggregates/custom-bars) (formerly Polygon.io)
 - [x] [Twelvedata](https://twelvedata.com/docs#time-series)
 - [x] [Yahoo Finance](https://finance.yahoo.com/) (Unofficial, no token required)
 

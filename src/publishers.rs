@@ -1,6 +1,6 @@
 pub(crate) mod alphavantage;
 pub(crate) mod finnhub;
-pub(crate) mod polygon_io;
+pub(crate) mod massive;
 pub(crate) mod twelvedata;
 pub(crate) mod yahoo_finance;
 

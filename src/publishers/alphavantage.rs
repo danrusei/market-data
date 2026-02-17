@@ -1,6 +1,6 @@
 //! Fetch time series stock data from [AlphaVantage](https://www.alphavantage.co/documentation/#time-series-data)
 
-use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 use url::Url;
 
 use crate::{
@@ -134,9 +134,6 @@ impl Publisher for AlphaVantage {
     }
 
     fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
-        // AlphaVantage returns dynamic keys for time series data depending on the interval/function.
-        // We use a generic approach with serde_json::Value or multiple structs.
-
         let mut data_series: Vec<Series> = Vec::new();
         let v: serde_json::Value = serde_json::from_str(&data)?;
 
@@ -176,22 +173,25 @@ impl Publisher for AlphaVantage {
                 .and_then(|v| v.as_str())
                 .and_then(|s| s.parse().ok())
                 .ok_or_else(|| MarketError::ParsingError("Unable to parse Close".to_string()))?;
-            let volume: f32 = values
+            let volume: f64 = values
                 .get("5. volume")
                 .and_then(|v| v.as_str())
                 .and_then(|s| s.parse().ok())
                 .ok_or_else(|| MarketError::ParsingError("Unable to parse Volume".to_string()))?;
 
-            let date = if date_str.len() > 10 {
-                NaiveDate::parse_from_str(&date_str[..10], "%Y-%m-%d")
-                    .map_err(|e| MarketError::ParsingError(e.to_string()))?
+            let datetime = if date_str.len() == 10 {
+                NaiveDateTime::parse_from_str(
+                    &format!("{} 00:00:00", date_str),
+                    "%Y-%m-%d %H:%M:%S",
+                )
+                .map_err(|e| MarketError::ParsingError(e.to_string()))?
             } else {
-                NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+                NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S")
                     .map_err(|e| MarketError::ParsingError(e.to_string()))?
             };
 
             data_series.push(Series {
-                date,
+                datetime,
                 open,
                 close,
                 high,
@@ -200,7 +200,7 @@ impl Publisher for AlphaVantage {
             });
         }
 
-        data_series.sort_by_key(|item| item.date);
+        data_series.sort_by_key(|item| item.datetime);
 
         Ok(MarketSeries {
             symbol: request.symbol.clone(),

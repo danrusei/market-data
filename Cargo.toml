@@ -37,8 +37,8 @@ name = "series_finnhub"
 path = "examples/series_finnhub.rs"
 
 [[example]]
-name = "series_polygon_io"
-path = "examples/series_polygon_io.rs"
+name = "series_massive"
+path = "examples/series_massive.rs"
 
 [[example]]
 name = "series_yahoo_finance"

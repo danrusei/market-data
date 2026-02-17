@@ -176,71 +176,60 @@ impl fmt::Display for EnhancedMarketSeries {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "EnhancedMarketSerie: Symbol = {}, Interval = {},  Requested Indicators: {:?}, Series: ",
+            "EnhancedMarketSeries: Symbol = {}, Interval = {}, Requested Indicators: {:?}",
             self.symbol, self.interval, self.asks
         )?;
+        writeln!(f, "{:-<120}", "")?;
+
         for (i, series) in self.series.iter().enumerate() {
-            write!(
-                f,
-                "Date: {}, Open: {:.2}, Close: {:.2}, High: {:.2}, Low: {:.2}, Volume: {:.2}, ",
-                series.date, series.open, series.close, series.high, series.low, series.volume
-            )?;
+            let mut row = format!(
+                "DateTime: {}, O: {:.2}, C: {:.2}, H: {:.2}, L: {:.2}, V: {:.0}",
+                series.datetime, series.open, series.close, series.high, series.low, series.volume
+            );
 
-            for (indicator_name, indicator_values) in &self.indicators.sma {
-                if let Some(value) = indicator_values.get(i) {
-                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+            // Add SMA values
+            for (name, values) in &self.indicators.sma {
+                if let Some(val) = values.get(i) {
+                    row.push_str(&format!(" | {}: {:.2}", name, val));
                 }
             }
 
-            for (indicator_name, indicator_values) in &self.indicators.ema {
-                if let Some(value) = indicator_values.get(i) {
-                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+            // Add EMA values
+            for (name, values) in &self.indicators.ema {
+                if let Some(val) = values.get(i) {
+                    row.push_str(&format!(" | {}: {:.2}", name, val));
                 }
             }
 
-            for (indicator_name, indicator_values) in &self.indicators.rsi {
-                if let Some(value) = indicator_values.get(i) {
-                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+            // Add RSI values
+            for (name, values) in &self.indicators.rsi {
+                if let Some(val) = values.get(i) {
+                    row.push_str(&format!(" | {}: {:.2}", name, val));
                 }
             }
 
-            for (indicator_name, indicator_values) in &self.indicators.stochastic {
-                if let Some(value) = indicator_values.get(i) {
-                    write!(f, "{}: {:.2}, ", indicator_name, value)?;
+            // Add Stochastic values
+            for (name, values) in &self.indicators.stochastic {
+                if let Some(val) = values.get(i) {
+                    row.push_str(&format!(" | {}: {:.2}", name, val));
                 }
             }
 
-            for (indicator_name, (macd, signal, histogram)) in &self.indicators.macd {
-                if let Some(macd_value) = macd.get(i) {
-                    if let Some(signal_value) = signal.get(i) {
-                        if let Some(hist_value) = histogram.get(i) {
-                            write!(
-                                f,
-                                "{}: {:.2}, {:.2}, {:.2}, ",
-                                indicator_name, macd_value, signal_value, hist_value
-                            )?;
-                        }
-                    }
+            // Add MACD values
+            for (name, (m, s, h)) in &self.indicators.macd {
+                if let (Some(mv), Some(sv), Some(hv)) = (m.get(i), s.get(i), h.get(i)) {
+                    row.push_str(&format!(" | {}: {:.2}/{:.2}/{:.2}", name, mv, sv, hv));
                 }
             }
 
-            for (indicator_name, (upper_band, mid_band, lower_band)) in &self.indicators.bb {
-                if let Some(upper_band) = upper_band.get(i) {
-                    if let Some(mid_band) = mid_band.get(i) {
-                        if let Some(lower_band) = lower_band.get(i) {
-                            write!(
-                                f,
-                                "{}: {:.2}, {:.2}, {:.2}, ",
-                                indicator_name, upper_band, mid_band, lower_band
-                            )?;
-                        }
-                    }
+            // Add Bollinger Band values
+            for (name, (u, m, l)) in &self.indicators.bb {
+                if let (Some(uv), Some(mv), Some(lv)) = (u.get(i), m.get(i), l.get(i)) {
+                    row.push_str(&format!(" | {}: {:.2}/{:.2}/{:.2}", name, uv, mv, lv));
                 }
             }
 
-            if i < self.series.len() - 1 {
-                writeln!(f, ",")?;
-            }
+            writeln!(f, "{}", row)?;
         }
 
         Ok(())

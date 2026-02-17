@@ -158,7 +158,8 @@ impl Publisher for YahooFin {
             let close = quote.close.get(i).and_then(|v| *v);
             let volume = quote.volume.get(i).and_then(|v| *v);
 
-            if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume) {
+            if let (Some(o), Some(h), Some(l), Some(c), Some(v)) = (open, high, low, close, volume)
+            {
                 data_series.push(Series {
                     datetime: datetime.naive_utc(),
                     open: o as f32,

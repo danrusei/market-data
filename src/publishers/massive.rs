@@ -137,7 +137,11 @@ impl Publisher for Massive {
         let base_url = Url::parse(BASE_URL)?;
         let mut url = base_url.join(&format!(
             "{}/range/{}/{}/{}/{}",
-            request.symbol, request.multiplier, request.timespan, request.from_date, request.to_date,
+            request.symbol,
+            request.multiplier,
+            request.timespan,
+            request.from_date,
+            request.to_date,
         ))?;
         {
             let mut pairs = url.query_pairs_mut();

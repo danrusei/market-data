@@ -180,7 +180,7 @@ impl fmt::Display for EnhancedMarketSeries {
             self.symbol, self.interval, self.asks
         )?;
         writeln!(f, "{:-<120}", "")?;
-        
+
         for (i, series) in self.series.iter().enumerate() {
             let mut row = format!(
                 "DateTime: {}, O: {:.2}, C: {:.2}, H: {:.2}, L: {:.2}, V: {:.0}",

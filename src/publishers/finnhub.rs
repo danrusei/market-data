@@ -139,9 +139,7 @@ impl Publisher for Finnhub {
     fn transform_data(&self, data: String, request: &Self::Request) -> MarketResult<MarketSeries> {
         match request {
             FinnhubRequest::Candle {
-                symbol,
-                resolution,
-                ..
+                symbol, resolution, ..
             } => {
                 let candles: FinnhubCandles = serde_json::from_str(&data)?;
 
@@ -171,18 +169,18 @@ impl Publisher for Finnhub {
                 let t = candles
                     .t
                     .ok_or_else(|| MarketError::DownloadedData("Missing timestamps".to_string()))?;
-                let o = candles
-                    .o
-                    .ok_or_else(|| MarketError::DownloadedData("Missing open prices".to_string()))?;
-                let h = candles
-                    .h
-                    .ok_or_else(|| MarketError::DownloadedData("Missing high prices".to_string()))?;
+                let o = candles.o.ok_or_else(|| {
+                    MarketError::DownloadedData("Missing open prices".to_string())
+                })?;
+                let h = candles.h.ok_or_else(|| {
+                    MarketError::DownloadedData("Missing high prices".to_string())
+                })?;
                 let l = candles
                     .l
                     .ok_or_else(|| MarketError::DownloadedData("Missing low prices".to_string()))?;
-                let c = candles
-                    .c
-                    .ok_or_else(|| MarketError::DownloadedData("Missing close prices".to_string()))?;
+                let c = candles.c.ok_or_else(|| {
+                    MarketError::DownloadedData("Missing close prices".to_string())
+                })?;
                 let v = candles
                     .v
                     .ok_or_else(|| MarketError::DownloadedData("Missing volumes".to_string()))?;

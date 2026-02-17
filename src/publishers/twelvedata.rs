@@ -136,12 +136,15 @@ impl Publisher for Twelvedata {
             })?;
 
             let datetime = if series.datetime.len() == 10 {
-                NaiveDateTime::parse_from_str(&format!("{} 00:00:00", series.datetime), "%Y-%m-%d %H:%M:%S")
-                    .map_err(|e| MarketError::ParsingError(format!("Unable to parse date: {}", e)))?
+                NaiveDateTime::parse_from_str(
+                    &format!("{} 00:00:00", series.datetime),
+                    "%Y-%m-%d %H:%M:%S",
+                )
+                .map_err(|e| MarketError::ParsingError(format!("Unable to parse date: {}", e)))?
             } else {
-                NaiveDateTime::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(|e| {
-                    MarketError::ParsingError(format!("Unable to parse datetime: {}", e))
-                })?
+                NaiveDateTime::parse_from_str(&series.datetime, "%Y-%m-%d %H:%M:%S").map_err(
+                    |e| MarketError::ParsingError(format!("Unable to parse datetime: {}", e)),
+                )?
             };
 
             data_series.push(Series {

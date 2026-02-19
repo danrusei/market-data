@@ -1,6 +1,6 @@
 [package]
 name = "market-data"
-version = "0.5.0"
+version = "0.5.1"
 description = "A Rust lib to fetch & enhance historical time-series stock market data"
 keywords = ["stock_time-series", "market-data", "equities_data"]
 authors = ["Dan Rusei <dan.rusei@gmail.com>"]
@@ -12,8 +12,8 @@ edition = "2021"
 exclude = [".github/*",]
 
 [dependencies]
-chrono = { version = "0.4.43", features = ["serde"] }
-serde = { version = "1.0.228", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0"
 url = "2.5"

@@ -18,6 +18,7 @@ serde_json = "1.0"
 thiserror = "2.0"
 url = "2.5"
 reqwest = { version = "0.13", features = ["json"] }
+fin-primitives = { version = "4.0.1", default-features = false, features = ["indicators"] }
 
 [dev-dependencies]
 anyhow = "1.0.101"
